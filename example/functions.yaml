@@ -8,4 +8,11 @@ metadata:
     render.crossplane.io/runtime: Development
 spec:
   # This is ignored when using the Development runtime.
-  package: function-gitlab-importer
+  package: c337d1e298c3e7f6a9a65f20d665089cc89f2d6b43513954f7c5a585d0455bfe
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: crossplane-contrib-function-go-templating
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.11.0
