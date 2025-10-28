@@ -1,0 +1,21 @@
+apiVersion: projects.gitlab.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  name: example-project
+  annotations:
+    crossplane.io/composition-resource-name: example-project-crn
+spec:
+  forProvider:
+    # If not set, metadata.name will be used instead.
+    name: "Example Project"
+    namespaceId: 117234999
+    description: "example project description"
+  providerConfigRef:
+    name: gitlab-provider
+  # a reference to a Kubernetes secret to which the controller will write the runnersToken
+  writeConnectionSecretToRef:
+    name: gitlab-project-example-project-2
+    namespace: crossplane-system
+status:
+  conditions:
+    message: "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
