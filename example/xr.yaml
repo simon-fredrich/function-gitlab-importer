@@ -1,6 +1,8 @@
 # Replace this with your XR!
-apiVersion: example.crossplane.io/v1
-kind: XR
+apiVersion: example.crossplane.io/v1alpha1
+kind: XProject
 metadata:
-  name: example-xr
-spec: {}
+  name: xproject-1
+spec: 
+  projectName: create-project
+  namespaceId: 117974298
