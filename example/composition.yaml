@@ -1,17 +1,38 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: function-gitlab-importer
+  name: function-gitlab-importer-compo
 spec:
   compositeTypeRef:
-    apiVersion: example.crossplane.io/v1
-    kind: XR
+    apiVersion: example.crossplane.io/v1alpha1
+    kind: XProject
   mode: Pipeline
   pipeline:
-  - step: run-the-template
+  - step: render-project-template
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            ---
+            apiVersion: projects.gitlab.crossplane.io/v1alpha1
+            kind: Project
+            metadata:
+              name: {{ .observed.composite.resource.spec.projectName }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ .observed.composite.resource.spec.projectName }}-crn
+            spec:
+              forProvider:
+                name: {{ .observed.composite.resource.spec.projectName }}
+                namespaceId: {{ .observed.composite.resource.spec.namespaceId}}
+              providerConfigRef:
+                name: gitlab-provider
+              writeConnectionSecretToRef:
+                name: {{ .observed.composite.resource.spec.projectName }}-secret
+                namespace: crossplane-system
+  - step: check-if-already-exists
     functionRef:
       name: function-gitlab-importer
-    input:
-      apiVersion: template.fn.crossplane.io/v1beta1
-      kind: Input
-      example: "Hello world"
