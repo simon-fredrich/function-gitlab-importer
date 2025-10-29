@@ -4,5 +4,6 @@ kind: XProject
 metadata:
   name: xproject-1
 spec: 
-  projectName: create-project
-  namespaceId: 117974298
+  groupName: example-group
+  projectName: example-project
+  namespaceId: 117234999
