@@ -5,10 +5,10 @@ metadata:
   name: function-gitlab-importer
   annotations:
     # This tells crossplane beta render to connect to the function locally.
-    render.crossplane.io/runtime: Development
+    # render.crossplane.io/runtime: Development
 spec:
   # This is ignored when using the Development runtime.
-  package: c337d1e298c3e7f6a9a65f20d665089cc89f2d6b43513954f7c5a585d0455bfe
+  package: ghcr.io/simon-fredrich/function-gitlab-importer:v1alpha1
 ---
 apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
