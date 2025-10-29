@@ -1,0 +1,64 @@
+apiVersion: groups.gitlab.crossplane.io/v1alpha1
+kind: Group
+metadata:
+  annotations:
+    crossplane.io/external-create-pending: "2025-10-27T14:42:21Z"
+    crossplane.io/external-create-succeeded: "2025-10-27T14:42:23Z"
+    crossplane.io/external-name: "117969431"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"groups.gitlab.crossplane.io/v1alpha1","kind":"Group","metadata":{"annotations":{},"name":"example-group"},"spec":{"forProvider":{"description":"example group description","name":"Example Group","parentId":117234999,"path":"example-group-path"},"providerConfigRef":{"name":"gitlab-provider"},"writeConnectionSecretToRef":{"name":"gitlab-group-example-group","namespace":"crossplane-system"}}}
+    crossplane.io/composition-resource-name: example-group-crn
+  creationTimestamp: "2025-10-27T14:42:21Z"
+  finalizers:
+  - finalizer.managedresource.crossplane.io
+  generation: 2
+  name: example-group
+  resourceVersion: "265657"
+  uid: 49182d69-30df-424b-9e3a-67f11b995653
+spec:
+  deletionPolicy: Delete
+  forProvider:
+    autoDevopsEnabled: false
+    description: example group description
+    emailsEnabled: true
+    extraSharedRunnersMinutesLimit: 0
+    lfsEnabled: true
+    membershipLock: false
+    mentionsDisabled: false
+    name: Example Group
+    parentId: 117234999
+    path: example-group-path
+    projectCreationLevel: developer
+    requestAccessEnabled: true
+    requireTwoFactorAuthentication: false
+    shareWithGroupLock: false
+    sharedRunnersMinutesLimit: 0
+    subgroupCreationLevel: maintainer
+    twoFactorGracePeriod: 48
+    visibility: private
+  managementPolicies:
+  - '*'
+  providerConfigRef:
+    name: gitlab-provider
+  writeConnectionSecretToRef:
+    name: gitlab-group-example-group
+    namespace: crossplane-system
+status:
+  atProvider:
+    avatarUrl: ""
+    createdAt: "2025-10-27T14:42:21Z"
+    fullName: Second group / Example Group
+    fullPath: second-group4402342/example-group-path
+    id: 117969431
+    ldapCn: ""
+    webUrl: https://gitlab.com/groups/second-group4402342/example-group-path
+  conditions:
+  - lastTransitionTime: "2025-10-27T14:42:24Z"
+    reason: Available
+    status: "True"
+    type: Ready
+  - lastTransitionTime: "2025-10-29T08:06:36Z"
+    observedGeneration: 2
+    reason: ReconcileSuccess
+    status: "True"
+    type: Synced
