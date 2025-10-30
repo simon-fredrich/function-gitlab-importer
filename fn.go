@@ -9,7 +9,6 @@ import (
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/response"
-	"k8s.io/apimachinery/pkg/runtime"
 	// "github.com/simon-fredrich/function-gitlab-importer/internal"
 )
 
@@ -55,29 +54,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			"Kind", obs.Resource.GetKind())
 
 		obs.Resource.SetString(externalNameAnnotationPath, "test")
+		ext, err := obs.Resource.GetString(externalNameAnnotationPath)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrapf(err, "cannot get external name from %T", ext))
+		}
 
-		f.log.Debug("With external annotation path")
-
-		// resourceUnstructured := value.Resource.UnstructuredContent()
-		// f.log.Debug("Observed resource found!",
-		// 	"composition-resource-name", key)
-
-		// var resource Resource
-		// err := runtime.DefaultUnstructuredConverter.FromUnstructured(resourceUnstructured, &resource)
-		// checkUnmarshal(err, rsp, resourceUnstructured)
-
-		// compareMessage := "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
-		// if resource.APIVersion == "groups.gitlab.crossplane.io/v1alpha1" && resource.Kind == "Group" {
-		// 	if checkMessage(f, rsp, resource, compareMessage) {
-		// 		forProvider := getForProvider(f, rsp, resource)
-		// 		f.log.Debug("Got group details!", "parentId", forProvider.ParentId, "path", forProvider.Path)
-		// 	}
-		// } else if resource.APIVersion == "projects.gitlab.crossplane.io/v1alpha1" && resource.Kind == "Project" {
-		// 	if checkMessage(f, rsp, resource, compareMessage) {
-		// 		forProvider := getForProvider(f, rsp, resource)
-		// 		f.log.Debug("Got project details!", "namespaceId", forProvider.NamespaceId, "path", forProvider.Path)
-		// 	}
-		// }
+		f.log.Debug("with external annotation path", "external-name", ext)
 	}
 
 	// You can set a custom status condition on the claim. This allows you to
@@ -88,40 +70,6 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		TargetCompositeAndClaim()
 
 	return rsp, nil
-}
-
-// check if status.condition[i].message of resource is the same as the message provided as `compareMessage`
-func checkMessage(f *Function, rsp *fnv1.RunFunctionResponse, resource Resource, compareMessage string) bool {
-	var status Status
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Status, &status)
-	checkUnmarshal(err, rsp, resource.Status)
-
-	f.log.Debug("Resource has been unmarschalled",
-		"APIVersion", resource.APIVersion,
-		"Kind", resource.Kind)
-
-	for key, value := range status.Conditions {
-		var condition Condition
-		f.log.Debug("Condition!", "key", key, "value", value)
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(value, &condition)
-		checkUnmarshal(err, rsp, value)
-		if condition.Message == "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}" {
-			f.log.Debug("found error message")
-			return true
-		}
-	}
-	return false
-}
-
-// get forProvider details for provided resource
-func getForProvider(f *Function, rsp *fnv1.RunFunctionResponse, resource Resource) ForProvider {
-	var spec Spec
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Spec, &spec)
-	checkUnmarshal(err, rsp, resource.Spec)
-	var forProvider ForProvider
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(spec.ForProvider, &forProvider)
-	checkUnmarshal(err, rsp, spec.ForProvider)
-	return forProvider
 }
 
 func checkUnmarshal(err error, rsp *fnv1.RunFunctionResponse, value map[string]interface{}) {
