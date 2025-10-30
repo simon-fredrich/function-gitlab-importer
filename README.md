@@ -51,7 +51,6 @@ go run . --insecure --debug
 To test the function one might need additional resources. These can be provided in the folder `example/observed` and used withing the rendering call. Open a second terminal and run the following command:
 ```shell
 crossplane render \
-  --extra-resources extra-resources \
   --observed-resources example/observed \
   --include-full-xr \
   --include-context \
