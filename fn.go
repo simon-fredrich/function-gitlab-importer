@@ -36,8 +36,17 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	type Resource struct {
-		APIVersion string `json:"apiVersion"`
-		Kind       string `json:"kind"`
+		APIVersion string                 `json:"apiVersion"`
+		Kind       string                 `json:"kind"`
+		Status     map[string]interface{} `json:"status"`
+	}
+
+	type Status struct {
+		Conditions []map[string]interface{} `json:"conditions,omitempty"`
+	}
+
+	type Condition struct {
+		Message string `json:"message,omitempty"`
 	}
 
 	// steps to implement in a loop over observed resources
@@ -53,21 +62,33 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// * type Group struct
 	// * type Project struct
 
-	for compositionResourceName, value := range observed {
-		resourceUnstructured := value.Resource
+	for key, value := range observed {
+		resourceUnstructured := value.Resource.UnstructuredContent()
 		f.log.Debug("Observed resource found!",
-			"composition-resource-name", compositionResourceName,
-			"Resource", resourceUnstructured)
+			"composition-resource-name", key)
 
 		var resource Resource
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(resourceUnstructured.UnstructuredContent(), &resource)
-		if err != nil {
-			response.Fatal(rsp, errors.Wrapf(err, "cannot unmarschal unstructured content from %T", resourceUnstructured))
-		}
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(resourceUnstructured, &resource)
+		cannotUnmarschal(err, rsp, resourceUnstructured)
+
+		var status Status
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Status, &status)
+		cannotUnmarschal(err, rsp, resource.Status)
 
 		f.log.Debug("Resource has been unmarschalled",
 			"APIVersion", resource.APIVersion,
 			"Kind", resource.Kind)
+
+		for key, value := range status.Conditions {
+			var condition Condition
+			f.log.Debug("Condition!", "key", key, "value", value)
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(value, &condition)
+			cannotUnmarschal(err, rsp, value)
+			if condition.Message == "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}" {
+				f.log.Debug("found error message")
+				break
+			}
+		}
 	}
 
 	// You can set a custom status condition on the claim. This allows you to
@@ -78,4 +99,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		TargetCompositeAndClaim()
 
 	return rsp, nil
+}
+
+func cannotUnmarschal(err error, rsp *fnv1.RunFunctionResponse, value map[string]interface{}) {
+	if err != nil {
+		response.Fatal(rsp, errors.Wrapf(err, "cannot unmarschal unstructured content from %T", value))
+	}
 }
