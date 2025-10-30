@@ -58,9 +58,6 @@ status:
     status: "True"
     type: Ready
   - lastTransitionTime: "2025-10-29T08:06:36Z"
-    message: 'create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects:
-      400 {message: {name: [has already been taken]}, {path: [has already been taken]},
-      {project_namespace.name: [has already been taken]}}'
     observedGeneration: 2
     reason: ReconcileSuccess
     status: "True"

@@ -1,4 +1,4 @@
-module github.com/crossplane/function-gitlab-importer
+module github.com/simon-fredrich/function-gitlab-importer
 
 go 1.23
 

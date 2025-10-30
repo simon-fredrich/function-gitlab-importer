@@ -19,7 +19,6 @@ spec:
   forProvider:
     description: example project description
     name: Example Project
-    path: example-project
     namespaceId: 117234999
   managementPolicies:
   - '*'
