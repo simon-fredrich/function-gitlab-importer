@@ -40,7 +40,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	f.log.Debug("desired resources found", "res", resources.GetDesired())
+	f.log.Debug("resources found", "des", resources.GetDesired(), "obs", resources.GetObserved())
 
 	// steps to implement in a loop over observed resources
 
