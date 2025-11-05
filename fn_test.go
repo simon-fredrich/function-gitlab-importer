@@ -15,6 +15,14 @@ import (
 	"github.com/crossplane/function-sdk-go/response"
 )
 
+var (
+	observedWithWrongMessage = `{"apiVersion":"projects.gitlab.crossplane.io/v1alpha1","kind":"Project","metadata":{"annotations":{"crossplane.io/composition-resource-name":"example-project-crn","crossplane.io/external-create-failed":"2025-10-29T09:56:14Z","crossplane.io/external-create-pending":"2025-10-29T09:56:14Z","kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"projects.gitlab.crossplane.io/v1alpha1\",\"kind\":\"Project\",\"metadata\":{\"annotations\":{},\"name\":\"example-project\"},\"spec\":{\"forProvider\":{\"description\":\"example project description\",\"name\":\"Example Project\",\"namespaceId\":117234999},\"providerConfigRef\":{\"name\":\"gitlab-provider\"},\"writeConnectionSecretToRef\":{\"name\":\"gitlab-project-example-project-2\",\"namespace\":\"crossplane-system\"}}}\n"},"creationTimestamp":"2025-10-28T14:52:32Z","finalizers":["finalizer.managedresource.crossplane.io"],"generation":2,"name":"example-project","resourceVersion":"277739","uid":"02e63ebf-667f-461f-aa66-438a5bd193ed"},"spec":{"deletionPolicy":"Delete","forProvider":{"description":"example project description","name":"Example Project","namespaceId":117234999,"path":"example-project"},"managementPolicies":["*"],"providerConfigRef":{"name":"gitlab-provider"},"writeConnectionSecretToRef":{"name":"example-project-secret","namespace":"crossplane-system"}},"status":{"atProvider":{},"conditions":[{"lastTransitionTime":"2025-10-29T09:56:06Z","message":"this is a wrong message","observedGeneration":2,"reason":"ReconcileError","status":"False","type":"Synced"},{"lastTransitionTime":"2025-10-28T14:53:22Z","observedGeneration":2,"reason":"Creating","status":"False","type":"Ready"}]}}`
+	composedWithout          = `{"apiVersion":"projects.gitlab.crossplane.io/v1alpha1","kind":"Project","metadata":{"annotations":{crossplane.io/composition-resource-name: example-project-crn},"name":"example-project"},"spec":{"forProvider":{"name":"example-project","namespaceId":117234999},"providerConfigRef":{"name":"gitlab-provider"},"writeConnectionSecretToRef":{"name":"example-project-secret","namespace":"crossplane-system"}}}`
+)
+
+// TODO: ResponseIsReturnedWithNoChange (wrong message does not change the desired resource)
+// TODO: ResponseIsReturnedWithChange(right message does change the desired resource with an external-name annotation)
+
 func TestRunFunction(t *testing.T) {
 
 	type args struct {
@@ -31,16 +39,15 @@ func TestRunFunction(t *testing.T) {
 		args   args
 		want   want
 	}{
-		"ResponseIsReturned": {
-			reason: "The Function should return a fatal result if no input was specified",
+		"ResponseIsReturnedWithNoChange": {
+			reason: "The Function should return the desired composed resource without any changes",
 			args: args{
 				req: &fnv1.RunFunctionRequest{
-					Meta: &fnv1.RequestMeta{Tag: "hello"},
-					Input: resource.MustStructJSON(`{
-						"apiVersion": "template.fn.crossplane.io/v1beta1",
-						"kind": "Input",
-						"example": "Hello, world"
-					}`),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(observedWithWrongMessage),
+						},
+					}
 				},
 			},
 			want: want{
