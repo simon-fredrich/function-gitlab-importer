@@ -1,0 +1,24 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata: 
+  name: xprojects.example.crossplane.io
+spec:
+  group: example.crossplane.io
+  names:
+    kind: XProject
+    plural: xprojects
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                namespaceId:
+                  type: integer
+                projectName:
+                  type: string

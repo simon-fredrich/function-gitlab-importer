@@ -1,0 +1,55 @@
+apiVersion: projects.gitlab.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: project-to-import-crn
+    crossplane.io/external-create-failed: "2025-11-04T14:30:25Z"
+    crossplane.io/external-create-pending: "2025-11-04T14:30:25Z"
+  creationTimestamp: "2025-11-04T14:26:22Z"
+  finalizers:
+  - finalizer.managedresource.crossplane.io
+  generateName: simple-function-one-
+  generation: 1
+  labels:
+    crossplane.io/claim-name: ""
+    crossplane.io/claim-namespace: ""
+    crossplane.io/composite: simple-function-one
+  name: project-to-import
+  ownerReferences:
+  - apiVersion: gitlab.example.org/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SimpleFunction
+    name: simple-function-one
+    uid: ed08ddf8-b88a-4ffc-bd42-620ea0382eaa
+  resourceVersion: "400673"
+  uid: 8946176d-b97d-4275-b5c0-1adfd54b7476
+spec:
+  deletionPolicy: Delete
+  forProvider:
+    name: project-to-import
+    namespaceId: 117974298
+    path: project-to-import
+  managementPolicies:
+  - '*'
+  providerConfigRef:
+    name: gitlab-provider
+  writeConnectionSecretToRef:
+    name: project-to-import-secret
+    namespace: crossplane-system
+status:
+  atProvider: {}
+  conditions:
+  - lastTransitionTime: "2025-11-04T14:26:22Z"
+    observedGeneration: 1
+    reason: Creating
+    status: "False"
+    type: Ready
+  - lastTransitionTime: "2025-11-04T14:26:22Z"
+    message: 'create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects:
+      400 {message: {name: [has already been taken]}, {path: [has already been taken]},
+      {project_namespace.name: [has already been taken]}}'
+    observedGeneration: 1
+    reason: ReconcileError
+    status: "False"
+    type: Synced

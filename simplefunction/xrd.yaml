@@ -1,0 +1,24 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: simplefunctions.gitlab.example.org
+spec:
+  group: gitlab.example.org
+  names:
+    kind: SimpleFunction
+    plural: simplefunctions
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                namespaceId:
+                  type: integer
+                projectName:
+                  type: string

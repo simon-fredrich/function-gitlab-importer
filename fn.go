@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
-	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
-	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/crossplane/function-template-go/input/v1beta1"
+	"github.com/simon-fredrich/function-gitlab-importer/internal"
 )
 
 // Function returns whatever response you ask it to.
@@ -19,36 +18,95 @@ type Function struct {
 	log logging.Logger
 }
 
+const errorMessage = "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
+
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
 	f.log.Info("Running function", "tag", req.GetMeta().GetTag())
-
 	rsp := response.To(req, response.DefaultTTL)
 
-	in := &v1beta1.Input{}
-	if err := request.GetInput(req, in); err != nil {
-		// You can set a custom status condition on the claim. This allows you to
-		// communicate with the user. See the link below for status condition
-		// guidance.
-		// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-		response.ConditionFalse(rsp, "FunctionSuccess", "InternalError").
-			WithMessage("Something went wrong.").
-			TargetCompositeAndClaim()
-
-		// You can emit an event regarding the claim. This allows you to communicate
-		// with the user. Note that events should be used sparingly and are subject
-		// to throttling; see the issue below for more information.
-		// https://github.com/crossplane/crossplane/issues/5802
-		response.Warning(rsp, errors.New("something went wrong")).
-			TargetCompositeAndClaim()
-
-		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
+	resources, err := internal.GetResources(req)
+	if err != nil {
+		f.log.Info("Failed to extract observed and desired composed resources.",
+			"error", err,
+		)
+		response.Fatal(rsp, fmt.Errorf("cannot extract observed and desired composed resources: %v", err))
 		return rsp, nil
 	}
 
-	// TODO: Add your Function logic here!
-	response.Normalf(rsp, "I was run with input %q!", in.Example)
-	f.log.Info("I was run!", "input", in.Example)
+	// end function if no observed resource found
+	if len(resources.GetDesired()) == 0 {
+		f.log.Info("No desired resources found")
+		return rsp, nil
+	}
+
+	f.log.Debug("desired resources found", "res", resources.GetDesired())
+
+	// steps to implement in a loop over observed resources
+
+	// 1.1 if APIVersion and Kind of observed resource relates to Gitlab-Project/-Group check its status.message
+	// 1.2 continue if status.message == 'create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects:
+	//       400 {message: {name: [has already been taken]}, {path: [has already been taken]},
+	//       {project_namespace.name: [has already been taken]}}'
+	// 1.3 use gitlab-import-test functions to find projectId and/or groupId depending on Kind
+	// 1.4 annotate external-name of observed resource
+
+	for name, obs := range resources.GetObserved() {
+		f.log.Debug("Information about observed resource",
+			"composition-resource-name", name,
+			"APIVersion", obs.Resource.GetAPIVersion(),
+			"Kind", obs.Resource.GetKind())
+
+		conditionSynced := obs.Resource.GetCondition("Synced")
+		if conditionSynced.Message == errorMessage {
+			f.log.Info("found error message")
+			obsGroup := obs.Resource.GroupVersionKind().Group
+			obsKind := obs.Resource.GroupVersionKind().Kind
+			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
+				clientGitlab, err := internal.LoadClientGitlab()
+				if err != nil {
+					f.log.Debug("cannot get gitlab-client", "err", err)
+				}
+				f.log.Info("found project")
+
+				projectNamespace, err := resources.GetNamespaceId(name)
+				if err != nil || projectNamespace == -1 {
+					f.log.Debug("cannot get projectNamespace from resource", "err", err)
+				}
+				projectPath, err := resources.GetPath(name)
+				if err != nil || projectPath == "" {
+					f.log.Debug("cannog get projectPath from resource", "err", err)
+				}
+				projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
+				if err != nil || projectId == -1 {
+					f.log.Debug("cannot get projectId from resource", "err", err)
+				}
+
+				f.log.Debug("Found projectId!", "projectId", projectId)
+
+				err = resources.SetExternalName(name, strconv.Itoa(projectId))
+				if err != nil {
+					f.log.Debug("external name cannot be set", "err", err)
+				}
+				f.log.Debug("external name has been set", "desired resource", resources.GetDesired()[name].Resource)
+
+				err = response.SetDesiredComposedResources(rsp, resources.GetDesired())
+				if err != nil {
+					f.log.Info("Failed to set desired composed resources.",
+						"error", err,
+						"desired", resources.GetDesired(),
+					)
+					response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources in %v", err))
+					return rsp, nil
+				}
+				return rsp, nil
+			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
+				f.log.Info("found group")
+			}
+		} else {
+			return rsp, nil
+		}
+	}
 
 	// You can set a custom status condition on the claim. This allows you to
 	// communicate with the user. See the link below for status condition

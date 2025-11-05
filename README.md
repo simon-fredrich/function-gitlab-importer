@@ -42,3 +42,17 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 [package docs]: https://pkg.go.dev/github.com/crossplane/function-sdk-go
 [docker]: https://www.docker.com
 [cli]: https://docs.crossplane.io/latest/cli
+
+## Run Function Locally
+Open a terminal and run the following command in the project directory.
+```shell
+go run . --insecure --debug
+```
+To test the function one might need additional resources. These can be provided in the folder `example/observed` and used withing the rendering call. Open a second terminal and run the following command:
+```shell
+crossplane render \
+  --observed-resources example/observed \
+  --include-full-xr \
+  --include-context \
+  example/xr.yaml example/composition.yaml example/functions.yaml
+```
