@@ -18,6 +18,8 @@ type Function struct {
 	log logging.Logger
 }
 
+// TODO: custom url - maybe don't need url at all
+// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab
 const errorMessage = "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
 
 // RunFunction runs the Function.
@@ -42,15 +44,6 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	f.log.Debug("resources found", "des", resources.GetDesired(), "obs", resources.GetObserved())
 
-	// steps to implement in a loop over observed resources
-
-	// 1.1 if APIVersion and Kind of observed resource relates to Gitlab-Project/-Group check its status.message
-	// 1.2 continue if status.message == 'create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects:
-	//       400 {message: {name: [has already been taken]}, {path: [has already been taken]},
-	//       {project_namespace.name: [has already been taken]}}'
-	// 1.3 use gitlab-import-test functions to find projectId and/or groupId depending on Kind
-	// 1.4 annotate external-name of observed resource
-
 	for name, obs := range resources.GetObserved() {
 		f.log.Debug("Information about observed resource",
 			"composition-resource-name", name,
@@ -62,12 +55,18 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			f.log.Info("found error message")
 			obsGroup := obs.Resource.GroupVersionKind().Group
 			obsKind := obs.Resource.GroupVersionKind().Kind
+			// TODO: relocate code for project/group into function
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
 				clientGitlab, err := internal.LoadClientGitlab()
 				if err != nil {
 					f.log.Debug("cannot get gitlab-client", "err", err)
 				}
 				f.log.Info("found project")
+
+				// TODO: Status an der composite resource angeben
+				// if clientGitlab == nil {
+
+				// }
 
 				projectNamespace, err := resources.GetNamespaceId(name)
 				if err != nil || projectNamespace == -1 {

@@ -9,6 +9,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
+// TODO: start function manually with set environment variables i.e. in the container
 func LoadClientGitlab() (*gitlab.Client, error) {
 	// get environment variables and check if they are initilized
 	token := os.Getenv("GITLAB_API_KEY")
@@ -21,7 +22,7 @@ func LoadClientGitlab() (*gitlab.Client, error) {
 		return nil, errors.New("GITLAB_URL is not set")
 	}
 
-	// Create a new instance of the gitlab api "client-go"
+	// create a new instance of the gitlab api "client-go"
 	client, err := gitlab.NewClient(token, gitlab.WithBaseURL(url+"/api/v4"))
 	if err != nil {
 		return nil, fmt.Errorf("creating new client for gitlab api: %v", err)
