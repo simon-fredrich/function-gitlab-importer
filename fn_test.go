@@ -7,17 +7,16 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/crossplane/function-sdk-go/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
-	"github.com/crossplane/function-sdk-go/response"
 )
 
+// TODO: import YAML-file + MustStructYAML with YAML-library https://pkg.go.dev/gopkg.in/yaml.v3
 var (
 	observedWithWrongMessage = `{"apiVersion":"projects.gitlab.crossplane.io/v1alpha1","kind":"Project","metadata":{"annotations":{"crossplane.io/composition-resource-name":"example-project-crn","crossplane.io/external-create-failed":"2025-10-29T09:56:14Z","crossplane.io/external-create-pending":"2025-10-29T09:56:14Z","kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"projects.gitlab.crossplane.io/v1alpha1\",\"kind\":\"Project\",\"metadata\":{\"annotations\":{},\"name\":\"example-project\"},\"spec\":{\"forProvider\":{\"description\":\"example project description\",\"name\":\"Example Project\",\"namespaceId\":117234999},\"providerConfigRef\":{\"name\":\"gitlab-provider\"},\"writeConnectionSecretToRef\":{\"name\":\"gitlab-project-example-project-2\",\"namespace\":\"crossplane-system\"}}}\n"},"creationTimestamp":"2025-10-28T14:52:32Z","finalizers":["finalizer.managedresource.crossplane.io"],"generation":2,"name":"example-project","resourceVersion":"277739","uid":"02e63ebf-667f-461f-aa66-438a5bd193ed"},"spec":{"deletionPolicy":"Delete","forProvider":{"description":"example project description","name":"Example Project","namespaceId":117234999,"path":"example-project"},"managementPolicies":["*"],"providerConfigRef":{"name":"gitlab-provider"},"writeConnectionSecretToRef":{"name":"example-project-secret","namespace":"crossplane-system"}},"status":{"atProvider":{},"conditions":[{"lastTransitionTime":"2025-10-29T09:56:06Z","message":"this is a wrong message","observedGeneration":2,"reason":"ReconcileError","status":"False","type":"Synced"},{"lastTransitionTime":"2025-10-28T14:53:22Z","observedGeneration":2,"reason":"Creating","status":"False","type":"Ready"}]}}`
-	composedWithout          = `{"apiVersion":"projects.gitlab.crossplane.io/v1alpha1","kind":"Project","metadata":{"annotations":{crossplane.io/composition-resource-name: example-project-crn},"name":"example-project"},"spec":{"forProvider":{"name":"example-project","namespaceId":117234999},"providerConfigRef":{"name":"gitlab-provider"},"writeConnectionSecretToRef":{"name":"example-project-secret","namespace":"crossplane-system"}}}`
+	desiredComposedWithout   = `{"apiVersion":"projects.gitlab.crossplane.io/v1alpha1","kind":"Project","metadata":{"annotations":{"crossplane.io/composition-resource-name": "example-project-crn"},"name":"example-project"},"spec":{"forProvider":{"name":"example-project","namespaceId":117234999},"providerConfigRef":{"name":"gitlab-provider"},"writeConnectionSecretToRef":{"name":"example-project-secret","namespace":"crossplane-system"}}}`
 )
 
 // TODO: ResponseIsReturnedWithNoChange (wrong message does not change the desired resource)
@@ -47,25 +46,15 @@ func TestRunFunction(t *testing.T) {
 						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(observedWithWrongMessage),
 						},
-					}
+					},
 				},
 			},
 			want: want{
 				rsp: &fnv1.RunFunctionResponse{
-					Meta: &fnv1.ResponseMeta{Tag: "hello", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1.Result{
-						{
-							Severity: fnv1.Severity_SEVERITY_NORMAL,
-							Message:  "I was run with input \"Hello, world\"!",
-							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
-						},
-					},
-					Conditions: []*fnv1.Condition{
-						{
-							Type:   "FunctionSuccess",
-							Status: fnv1.Status_STATUS_CONDITION_TRUE,
-							Reason: "Success",
-							Target: fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
+					// TODO: add Meta, so that test runs properly
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(desiredComposedWithout),
 						},
 					},
 				},
