@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
+	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/response"
+	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	"github.com/simon-fredrich/function-gitlab-importer/internal"
 )
 
@@ -26,6 +29,26 @@ const errorMessage = "create failed: cannot create Gitlab project: POST https://
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
 	f.log.Info("Running function", "tag", req.GetMeta().GetTag())
 	rsp := response.To(req, response.DefaultTTL)
+	in := &v1beta1.Input{}
+	if err := request.GetInput(req, in); err != nil {
+		// You can set a custom status condition on the claim. This allows you to
+		// communicate with the user. See the link below for status condition
+		// guidance.
+		// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+		response.ConditionFalse(rsp, "FunctionSuccess", "InternalError").
+			WithMessage("Something went wrong.").
+			TargetCompositeAndClaim()
+
+		// You can emit an event regarding the claim. This allows you to communicate
+		// with the user. Note that events should be used sparingly and are subject
+		// to throttling; see the issue below for more information.
+		// https://github.com/crossplane/crossplane/issues/5802
+		response.Warning(rsp, errors.New("something went wrong")).
+			TargetCompositeAndClaim()
+
+		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
+		return rsp, nil
+	}
 
 	resources, err := internal.GetResources(req)
 	if err != nil {
@@ -57,28 +80,30 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			obsKind := obs.Resource.GroupVersionKind().Kind
 			// TODO: relocate code for project/group into function
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
-				clientGitlab, err := internal.LoadClientGitlab()
+				f.log.Info("found project")
+				clientGitlab, err := internal.LoadClientGitlab(in)
 				if err != nil {
 					f.log.Debug("cannot get gitlab-client", "err", err)
+					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get client: %v", err)))
+					return rsp, nil
+				} else {
+					f.log.Info("initialized client")
 				}
-				f.log.Info("found project")
-
-				// TODO: Status an der composite resource angeben
-				// if clientGitlab == nil {
-
-				// }
 
 				projectNamespace, err := resources.GetNamespaceId(name)
 				if err != nil || projectNamespace == -1 {
-					f.log.Debug("cannot get projectNamespace from resource", "err", err)
+					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectNamespace: %v", err)))
+					return rsp, nil
 				}
 				projectPath, err := resources.GetPath(name)
 				if err != nil || projectPath == "" {
-					f.log.Debug("cannog get projectPath from resource", "err", err)
+					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectPath: %v", err)))
+					return rsp, nil
 				}
 				projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
 				if err != nil || projectId == -1 {
-					f.log.Debug("cannot get projectId from resource", "err", err)
+					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectId: %v", err)))
+					return rsp, nil
 				}
 
 				f.log.Debug("Found projectId!", "projectId", projectId)
@@ -86,6 +111,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				err = resources.SetExternalName(name, strconv.Itoa(projectId))
 				if err != nil {
 					f.log.Debug("external name cannot be set", "err", err)
+					return rsp, nil
 				}
 				f.log.Debug("external name has been set", "desired resource", resources.GetDesired()[name].Resource)
 

@@ -1,34 +1,51 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 // TODO: start function manually with set environment variables i.e. in the container
-func LoadClientGitlab() (*gitlab.Client, error) {
-	// get environment variables and check if they are initilized
-	token := os.Getenv("GITLAB_API_KEY")
-	if token == "" {
-		return nil, errors.New("GITLAB_API_KEY is not set")
+func LoadClientGitlab(in *v1beta1.Input) (*gitlab.Client, error) {
+	// try to get token and baseUrl via input
+	tokenInput := in.Token
+	baseUrlInput := in.BaseUrl
+
+	// try to get token and baseUrl via environment variables
+	tokenEnv := os.Getenv("GITLAB_API_KEY")
+	baseUrlEnv := os.Getenv("GITLAB_URL")
+
+	// test token and baseUrl
+	if tokenAndBaseUrlExist(tokenInput, baseUrlInput) {
+		// create a new instance of the gitlab api "client-go"
+		client, err := gitlab.NewClient(tokenInput, gitlab.WithBaseURL(baseUrlInput+"/api/v4"))
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("creating new client for gitlab api using input: %v", err))
+		}
+		return client, nil
+	} else if tokenAndBaseUrlExist(tokenEnv, baseUrlEnv) {
+		// create a new instance of the gitlab api "client-go"
+		client, err := gitlab.NewClient(tokenEnv, gitlab.WithBaseURL(baseUrlEnv+"/api/v4"))
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("creating new client for gitlab api using env: %v", err))
+		}
+		return client, nil
+	} else {
+		return nil, errors.New("token and baseUrl are not set in input or env")
 	}
 
-	url := os.Getenv("GITLAB_URL")
-	if url == "" {
-		return nil, errors.New("GITLAB_URL is not set")
-	}
+}
 
-	// create a new instance of the gitlab api "client-go"
-	client, err := gitlab.NewClient(token, gitlab.WithBaseURL(url+"/api/v4"))
-	if err != nil {
-		return nil, fmt.Errorf("creating new client for gitlab api: %v", err)
+func tokenAndBaseUrlExist(token string, baseUrl string) bool {
+	if token != "" && baseUrl != "" {
+		return true
 	}
-
-	return client, nil
+	return false
 }
 
 // GetProject returns the `projectId` for a given `namespaceId` and `path`
