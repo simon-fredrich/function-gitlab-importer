@@ -17,7 +17,24 @@ spec:
   # This is ignored when using the Development runtime.
   package: ghcr.io/simon-fredrich/function-gitlab-importer:<tag>
 ```
-
+## Setup Github-Credentials
+There are two possible ways to provide the function with the gitlab-api-token.
+### As Input
+`token` and `baseUrl` can be specified on a per-call-level.
+```yaml
+- step: run-function
+  functionRef:
+    name: function-gitlab-importer
+  input:
+    token: <gitlab-api-token>
+    baseUrl: <gitlab-baseUrl>
+```
+### As Environment-Variable
+The gitlab-credentials can also be specified as environment-variables within the container running the function. For that you have to specify the following variables.
+```shell
+$ export GITLAB_API_TOKEN=<gitlab-api-token>
+$ export GITLAB_URL=<gitlab_url>
+```
 ## Run Function Locally
 Open a terminal and run the following command in the project directory.
 ```shell
