@@ -27,12 +27,18 @@ func LoadClientGitlab(in *v1beta1.Input) (*gitlab.Client, error) {
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("creating new client for gitlab api using input: %v", err))
 		}
+		if client == nil {
+			return nil, errors.New("gitlab client is nil (using input)")
+		}
 		return client, nil
 	} else if tokenAndBaseUrlExist(tokenEnv, baseUrlEnv) {
 		// create a new instance of the gitlab api "client-go"
 		client, err := gitlab.NewClient(tokenEnv, gitlab.WithBaseURL(baseUrlEnv+"/api/v4"))
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("creating new client for gitlab api using env: %v", err))
+		}
+		if client == nil {
+			return nil, errors.New("gitlab client is nil (using environment variables)")
 		}
 		return client, nil
 	} else {
