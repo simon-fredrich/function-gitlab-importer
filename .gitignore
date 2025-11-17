@@ -22,3 +22,6 @@ go.work
 
 # temporary files
 temp*.*
+
+# environment config
+*environment-config*
