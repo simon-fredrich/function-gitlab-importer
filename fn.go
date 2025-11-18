@@ -79,6 +79,23 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			f.log.Info("ExternalName already set", "name", name, "externalName", externalName)
 			continue
 		}
+		if err != nil {
+			f.log.Info("cannot get externalName", "name", name, "err", err)
+		}
+
+		// ensure there is a matching desired resource we can update
+		desiredMap := resources.GetDesired()
+		desiredRes, ok := desiredMap[name]
+		if !ok {
+			f.log.Info("no corresponding desired resource found; skipping", "name", name)
+			continue
+		}
+
+		// TODO: desiredRes.Resource.SetAnnotations()
+		// TODO: deriredRes.Resource.GetAnnotations()
+		f.log.Info("desiredRes", "annotations", desiredRes.Resource.GetAnnotations())
+
+		// check if error message matches
 
 		conditionSynced := obs.Resource.GetCondition("Synced")
 		if conditionSynced.Message == errorMessage {
@@ -127,7 +144,6 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 				f.log.Info("found group")
 			}
-		} else {
 		}
 	}
 
