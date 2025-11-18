@@ -77,12 +77,14 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			"APIVersion", obs.Resource.GetAPIVersion(),
 			"Kind", obs.Resource.GetKind())
 
-		// TODO: nothing to do when external-name is already set
+		// nothing to do when external-name is already set
 		externalName, err := resources.GetExternalName(name)
 		if err != nil {
 			f.log.Info("cannot get external name", "err", err)
+		} else {
+			f.log.Info("found existing externalName", "externalName", externalName)
+			return rsp, nil
 		}
-		f.log.Info("found existing externalName", "externalName", externalName)
 
 		conditionSynced := obs.Resource.GetCondition("Synced")
 		if conditionSynced.Message == errorMessage {
