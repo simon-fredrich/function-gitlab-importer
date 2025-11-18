@@ -25,3 +25,6 @@ temp*.*
 
 # environment config
 *environment-config*
+
+# package-files
+*.xpkg
