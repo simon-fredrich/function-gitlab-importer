@@ -75,15 +75,16 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 		conditionSynced := obs.Resource.GetCondition("Synced")
 		if conditionSynced.Message == errorMessage {
-			f.log.Info("found error message")
+			f.log.Info("found specified error message")
 			obsGroup := obs.Resource.GroupVersionKind().Group
 			obsKind := obs.Resource.GroupVersionKind().Kind
 			// TODO: relocate code for project/group into function
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
-				f.log.Info("found project")
+				f.log.Info("found project resource in cluster")
 				clientGitlab, err := internal.LoadClientGitlab(in)
 				if err != nil {
 					f.log.Debug("cannot get gitlab-client", "err", err)
+					f.log.Info("cannot initialize client")
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get client: %v", err)))
 					return rsp, nil
 				} else {
@@ -91,16 +92,19 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				}
 
 				projectNamespace, err := resources.GetNamespaceId(name)
+				f.log.Info("display projectNamespace if possible", "projectNamespace", projectNamespace)
 				if err != nil || projectNamespace == -1 {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectNamespace: %v", err)))
 					return rsp, nil
 				}
 				projectPath, err := resources.GetPath(name)
+				f.log.Info("display projectPath if possible", "projectPath", projectPath)
 				if err != nil || projectPath == "" {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectPath: %v", err)))
 					return rsp, nil
 				}
 				projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
+				f.log.Info("display projectId if found using client", "projectId", projectId)
 				if err != nil || projectId == -1 {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectId: %v", err)))
 					return rsp, nil
@@ -124,6 +128,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources in %v", err))
 					return rsp, nil
 				}
+				f.log.Info("external name has been changed", "projectId", projectId)
 				return rsp, nil
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 				f.log.Info("found group")
