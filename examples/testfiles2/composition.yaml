@@ -34,17 +34,6 @@ spec:
               writeConnectionSecretToRef:
                 name: {{ .observed.composite.resource.spec.projectName }}-secret
                 namespace: crossplane-system
-    - step: environmentConfigs
-      functionRef:
-        name: crossplane-contrib-function-environment-configs
-      input:
-        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
-        kind: Input
-        spec:
-          environmentConfigs:
-          - type: Reference
-            ref:
-              name: example-environment
     - step: check-template
       functionRef:
         name: function-gitlab-importer
