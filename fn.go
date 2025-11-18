@@ -72,14 +72,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			"composition-resource-name", name,
 			"APIVersion", obs.Resource.GetAPIVersion(),
 			"Kind", obs.Resource.GetKind())
-		f.log.Info("found observed composed", "name", name, "data", resources.GetObserved()[name])
 
 		// nothing to do when external-name is already set
 		externalName, err := resources.GetExternalName(name)
-		if err != nil {
-			f.log.Info("cannot get external name", "err", err)
-		} else {
-			f.log.Info("found existing externalName", "externalName", externalName)
+		if err == nil && externalName != "" {
+			f.log.Info("ExternalName already set", "name", name, "externalName", externalName)
 			continue
 		}
 
@@ -90,31 +87,32 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			obsKind := obs.Resource.GroupVersionKind().Kind
 			// TODO: relocate code for project/group into function
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
-				f.log.Info("found project resource in cluster")
+				f.log.Info("found project resource in cluster", "name", name, "obs", obs)
 				clientGitlab, err := internal.LoadClientGitlab(in)
 				if err != nil {
 					f.log.Debug("cannot get gitlab-client", "err", err)
 					f.log.Info("cannot initialize client")
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get client: %v", err)))
-					return rsp, nil
-				} else {
-					f.log.Info("initialized client")
+					continue
 				}
 
 				projectNamespace, err := resources.GetNamespaceId(name)
 				f.log.Info("display projectNamespace if possible", "projectNamespace", projectNamespace)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectNamespace: %v", err)))
+					continue
 				}
 				projectPath, err := resources.GetPath(name)
 				f.log.Info("display projectPath if possible", "projectPath", projectPath)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectPath: %v", err)))
+					continue
 				}
 				projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
 				f.log.Info("display projectId if found using client", "projectId", projectId)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectId: %v", err)))
+					continue
 				}
 
 				f.log.Debug("Found projectId!", "projectId", projectId)
@@ -122,24 +120,21 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				err = resources.SetExternalName(name, strconv.Itoa(projectId))
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
+					continue
 				}
-				f.log.Debug("external name has been set", "desired resource", resources.GetDesired()[name].Resource)
-				f.log.Info("external name has been set", "desired resource", resources.GetDesired()[name].Resource)
-
-				err = response.SetDesiredComposedResources(rsp, resources.GetDesired())
-				if err != nil {
-					f.log.Info("Failed to set desired composed resources.",
-						"error", err,
-						"desired", resources.GetDesired(),
-					)
-					response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources in %v", err))
-				}
-				f.log.Info("external name has been changed", "projectId", projectId)
+				f.log.Debug("ExternalName set successfully", "name", name, "projectId", projectId)
+				f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 				f.log.Info("found group")
 			}
 		} else {
 		}
+	}
+
+	// Commit all changes once
+	if err := response.SetDesiredComposedResources(rsp, resources.GetDesired()); err != nil {
+		f.log.Info("Failed to set desired composed resources", "err", err)
+		response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
 	}
 
 	// You can set a custom status condition on the claim. This allows you to
