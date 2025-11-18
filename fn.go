@@ -80,7 +80,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			f.log.Info("cannot get external name", "err", err)
 		} else {
 			f.log.Info("found existing externalName", "externalName", externalName)
-			return rsp, nil
+			continue
 		}
 
 		conditionSynced := obs.Resource.GetCondition("Synced")
@@ -105,27 +105,23 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				f.log.Info("display projectNamespace if possible", "projectNamespace", projectNamespace)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectNamespace: %v", err)))
-					return rsp, nil
 				}
 				projectPath, err := resources.GetPath(name)
 				f.log.Info("display projectPath if possible", "projectPath", projectPath)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectPath: %v", err)))
-					return rsp, nil
 				}
 				projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
 				f.log.Info("display projectId if found using client", "projectId", projectId)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectId: %v", err)))
-					return rsp, nil
 				}
 
 				f.log.Debug("Found projectId!", "projectId", projectId)
 
 				err = resources.SetExternalName(name, strconv.Itoa(projectId))
 				if err != nil {
-					f.log.Debug("external name cannot be set", "err", err)
-					return rsp, nil
+					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
 				}
 				f.log.Debug("external name has been set", "desired resource", resources.GetDesired()[name].Resource)
 				f.log.Info("external name has been set", "desired resource", resources.GetDesired()[name].Resource)
@@ -137,15 +133,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 						"desired", resources.GetDesired(),
 					)
 					response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources in %v", err))
-					return rsp, nil
 				}
 				f.log.Info("external name has been changed", "projectId", projectId)
-				return rsp, nil
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 				f.log.Info("found group")
 			}
 		} else {
-			return rsp, nil
 		}
 	}
 
