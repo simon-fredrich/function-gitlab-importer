@@ -75,7 +75,7 @@ func (r Resources) GetExternalName(composedResourceName resource.Name) (string, 
 
 func (r Resources) SetExternalName(composedResourceName resource.Name, externalName string) error {
 	if externalName == "" {
-		return nil
+		return fmt.Errorf("empty externalName")
 	}
 
 	resource, ok := r.desiredComposed[composedResourceName]
