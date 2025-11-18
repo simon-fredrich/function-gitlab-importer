@@ -65,6 +65,14 @@ func (r Resources) GetPath(composedResourceName resource.Name) (string, error) {
 	return pathString, nil
 }
 
+func (r Resources) GetExternalName(composedResourceName resource.Name) (string, error) {
+	externalName, err := r.observedComposed[composedResourceName].Resource.GetString(externalNameAnnotationPath)
+	if err != nil {
+		return "", fmt.Errorf("cannot get externalName from resource: %v", err)
+	}
+	return externalName, nil
+}
+
 func (r Resources) SetExternalName(composedResourceName resource.Name, externalName string) error {
 	if externalName == "" {
 		return nil
