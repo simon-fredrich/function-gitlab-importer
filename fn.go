@@ -72,6 +72,17 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			"composition-resource-name", name,
 			"APIVersion", obs.Resource.GetAPIVersion(),
 			"Kind", obs.Resource.GetKind())
+		f.log.Info("Information about observed resource",
+			"composition-resource-name", name,
+			"APIVersion", obs.Resource.GetAPIVersion(),
+			"Kind", obs.Resource.GetKind())
+
+		// TODO: nothing to do when external-name is already set
+		externalName, err := resources.GetExternalName(name)
+		if err != nil {
+			f.log.Info("cannot get external name", "err", err)
+		}
+		f.log.Info("found existing externalName", "externalName", externalName)
 
 		conditionSynced := obs.Resource.GetCondition("Synced")
 		if conditionSynced.Message == errorMessage {
@@ -93,19 +104,19 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 				projectNamespace, err := resources.GetNamespaceId(name)
 				f.log.Info("display projectNamespace if possible", "projectNamespace", projectNamespace)
-				if err != nil || projectNamespace == -1 {
+				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectNamespace: %v", err)))
 					return rsp, nil
 				}
 				projectPath, err := resources.GetPath(name)
 				f.log.Info("display projectPath if possible", "projectPath", projectPath)
-				if err != nil || projectPath == "" {
+				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectPath: %v", err)))
 					return rsp, nil
 				}
 				projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
 				f.log.Info("display projectId if found using client", "projectId", projectId)
-				if err != nil || projectId == -1 {
+				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectId: %v", err)))
 					return rsp, nil
 				}
@@ -118,6 +129,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					return rsp, nil
 				}
 				f.log.Debug("external name has been set", "desired resource", resources.GetDesired()[name].Resource)
+				f.log.Info("external name has been set", "desired resource", resources.GetDesired()[name].Resource)
 
 				err = response.SetDesiredComposedResources(rsp, resources.GetDesired())
 				if err != nil {
