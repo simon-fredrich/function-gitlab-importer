@@ -7,10 +7,12 @@ metadata:
     # This tells crossplane beta render to connect to the function locally.
     render.crossplane.io/runtime: Development
     render.crossplane.io/runtime-docker-cleanup: "Orphan"
-    render.crossplane.io/runtime-docker-name: function-gitlab-importer-v2
+    render.crossplane.io/runtime-docker-name: local-function-gitlab-importer
 spec:
   # This is ignored when using the Development runtime.
   package: ghcr.io/simon-fredrich/function-gitlab-importer:v0.2.0
+  runtimeConfigRef:
+    name: gitlab-credentials-config
 ---
 apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
