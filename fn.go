@@ -72,10 +72,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			"composition-resource-name", name,
 			"APIVersion", obs.Resource.GetAPIVersion(),
 			"Kind", obs.Resource.GetKind())
-		f.log.Info("Information about observed resource",
-			"composition-resource-name", name,
-			"APIVersion", obs.Resource.GetAPIVersion(),
-			"Kind", obs.Resource.GetKind())
+		f.log.Info("found observed composed", "name", name, "data", resources.GetObserved()[name])
 
 		// nothing to do when external-name is already set
 		externalName, err := resources.GetExternalName(name)
