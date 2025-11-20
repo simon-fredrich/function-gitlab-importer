@@ -100,6 +100,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		conditionSynced := obs.Resource.GetCondition("Synced")
 		conditionReady := obs.Resource.GetCondition("Ready")
 		if conditionSynced.Status == "True" && conditionReady.Status == "True" {
+			f.log.Info("'Synced' and 'Ready' both 'True' -> skipping resource", "name", name)
 			continue
 		}
 		if conditionSynced.Status == "False" &&
