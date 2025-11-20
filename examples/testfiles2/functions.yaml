@@ -10,7 +10,7 @@ metadata:
     render.crossplane.io/runtime-docker-name: local-function-gitlab-importer
 spec:
   # This is ignored when using the Development runtime.
-  package: ghcr.io/simon-fredrich/function-gitlab-importer:v0.2.0
+  package: ghcr.io/simon-fredrich/function-gitlab-importer:v0.0.0-20251118143746-c7409d5a3bf7
   runtimeConfigRef:
     name: gitlab-credentials-config
 ---
