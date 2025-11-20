@@ -98,6 +98,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 		// check if error message matches
 		conditionSynced := obs.Resource.GetCondition("Synced")
+		conditionReady := obs.Resource.GetCondition("Ready")
+		if conditionSynced.Status == "True" && conditionReady.Status == "True" {
+			continue
+		}
 		if conditionSynced.Status == "False" &&
 			(strings.Contains(conditionSynced.Message, nameError) ||
 				strings.Contains(conditionSynced.Message, pathError) ||
