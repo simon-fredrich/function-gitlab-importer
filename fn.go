@@ -94,6 +94,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			continue
 		}
 
+		// check if external-name is already set in observed resource
+		currentExternalName := obs.Resource.GetAnnotations()["crossplane.io/external-name"]
+		if currentExternalName != "" {
+			f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
+			continue
+		}
+
 		// check if error message matches
 		conditionSynced := obs.Resource.GetCondition("Synced")
 		if conditionSynced.Status == "False" &&
