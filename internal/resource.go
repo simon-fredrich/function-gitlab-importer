@@ -47,41 +47,48 @@ func (r Resources) GetDesired() map[resource.Name]*resource.DesiredComposed {
 	return r.desiredComposed
 }
 
-func (r Resources) GetNamespaceId(composedResourceName resource.Name) (int, error) {
+func GetNamespaceId(des *resource.DesiredComposed) (int, error) {
 	resourcePath := "spec.forProvider.namespaceId"
-	namespaceId, err := r.observedComposed[composedResourceName].Resource.GetInteger(resourcePath)
+	namespaceId, err := des.Resource.GetInteger(resourcePath)
 	if err != nil {
 		return -1, fmt.Errorf("cannot get namespaceId from resource: %v", err)
 	}
 	return int(namespaceId), nil
 }
 
-func (r Resources) GetPath(composedResourceName resource.Name) (string, error) {
+func GetPath(des *resource.DesiredComposed) (string, error) {
 	resourcePath := "spec.forProvider.path"
-	pathString, err := r.observedComposed[composedResourceName].Resource.GetString(resourcePath)
+	pathString, err := des.Resource.GetString(resourcePath)
 	if err != nil {
 		return "", fmt.Errorf("cannot get path from resource: %v", err)
 	}
 	return pathString, nil
 }
 
-func (r Resources) GetExternalName(composedResourceName resource.Name) (string, error) {
-	externalName, err := r.observedComposed[composedResourceName].Resource.GetString(externalNameAnnotationPath)
-	if err != nil {
-		return "", fmt.Errorf("cannot get externalName from resource: %v", err)
+func GetExternalNameFromDesired(des *resource.DesiredComposed) (string, error) {
+	externalName := des.Resource.GetAnnotations()[externalNameAnnotationPath]
+	if externalName == "" {
+		return "", fmt.Errorf("external-name from desired resource is empty")
 	}
 	return externalName, nil
 }
 
-func (r Resources) SetExternalName(composedResourceName resource.Name, externalName string) error {
+func GetExternalNameFromObserved(obs resource.ObservedComposed) (string, error) {
+	externalName := obs.Resource.GetAnnotations()[externalNameAnnotationPath]
 	if externalName == "" {
-		return fmt.Errorf("empty externalName")
+		return "", fmt.Errorf("external-name from observed resource is empty")
+	}
+	return externalName, nil
+}
+
+func SetExternalNameOnDesired(des *resource.DesiredComposed, externalName string) error {
+	if externalName == "" {
+		return fmt.Errorf("external-name is empty")
 	}
 
-	resource, ok := r.desiredComposed[composedResourceName]
-	if !ok {
-		return fmt.Errorf("composed name %q not found", composedResourceName)
-	}
-	resource.Resource.SetString(externalNameAnnotationPath, externalName)
+	annotations := make(map[string]string)
+	annotations[externalNameAnnotationPath] = externalName
+	meta.AddAnnotations(des.Resource, annotations)
+
 	return nil
 }
