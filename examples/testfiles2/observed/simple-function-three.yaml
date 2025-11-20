@@ -1,0 +1,136 @@
+apiVersion: projects.gitlab.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: project-to-import-simple-function-three-crn
+    crossplane.io/external-create-failed: "2025-11-20T10:01:30Z"
+    crossplane.io/external-create-pending: "2025-11-20T10:01:30Z"
+  creationTimestamp: "2025-11-18T15:23:06Z"
+  finalizers:
+  - finalizer.managedresource.crossplane.io
+  generateName: simple-function-three-
+  generation: 2
+  labels:
+    crossplane.io/claim-name: ""
+    crossplane.io/claim-namespace: ""
+    crossplane.io/composite: simple-function-three
+  name: simple-function-three
+  ownerReferences:
+  - apiVersion: gitlab.example.org/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: SimpleFunction
+    name: simple-function-three
+    uid: f6e608bc-d687-42b3-8641-911607b118c9
+  resourceVersion: "913324"
+  uid: 63238af4-6292-4692-9b15-a2324dc3839a
+spec:
+  deletionPolicy: Delete
+  forProvider:
+    allowMergeOnSkippedPipeline: false
+    approvalsBeforeMerge: 0
+    autocloseReferencedIssues: true
+    buildsAccessLevel: enabled
+    ciDefaultGitDepth: 20
+    ciForwardDeploymentEnabled: true
+    containerRegistryAccessLevel: enabled
+    containerRegistryEnabled: true
+    defaultBranch: main
+    description: edit example project description
+    forkingAccessLevel: enabled
+    issuesAccessLevel: enabled
+    lfsEnabled: true
+    mergeMethod: merge
+    mergeRequestsAccessLevel: enabled
+    mirror: false
+    mirrorOverwritesDivergedBranches: false
+    mirrorTriggerBuilds: false
+    name: project-to-import
+    namespaceId: 117974298
+    onlyAllowMergeIfAllDiscussionsAreResolved: false
+    onlyAllowMergeIfPipelineSucceeds: false
+    onlyMirrorProtectedBranches: false
+    packagesEnabled: true
+    pagesAccessLevel: private
+    path: project-to-import
+    publicBuilds: true
+    removeSourceBranchAfterMerge: true
+    repositoryAccessLevel: enabled
+    requestAccessEnabled: true
+    resolveOutdatedDiffDiscussions: false
+    serviceDeskEnabled: true
+    sharedRunnersEnabled: true
+    snippetsAccessLevel: enabled
+    visibility: public
+    wikiAccessLevel: enabled
+  managementPolicies:
+  - '*'
+  providerConfigRef:
+    name: gitlab-provider
+status:
+  atProvider:
+    buildsAccessLevel: enabled
+    containerExpirationPolicy:
+      cadence: 1d
+      enabled: false
+      keepN: 10
+      nameRegexDelete: ""
+      nameRegexKeep: ""
+      nextRunAt: "2025-11-19T12:50:18Z"
+      olderThan: 90d
+    createdAt: "2025-11-18T12:50:18Z"
+    creatorId: 30708844
+    emptyRepo: true
+    httpUrlToRepo: https://gitlab.com/second-group4402342/dev-subgroup/project-to-import.git
+    id: 76172900
+    importStatus: none
+    issuesAccessLevel: enabled
+    issuesEnabled: true
+    jobsEnabled: true
+    lastActivityAt: "2025-11-18T15:19:04Z"
+    links:
+      events: https://gitlab.com/api/v4/projects/76172900/events
+      issues: https://gitlab.com/api/v4/projects/76172900/issues
+      labels: https://gitlab.com/api/v4/projects/76172900/labels
+      members: https://gitlab.com/api/v4/projects/76172900/members
+      mergeRequests: https://gitlab.com/api/v4/projects/76172900/merge_requests
+      repoBranches: https://gitlab.com/api/v4/projects/76172900/repository/branches
+      self: https://gitlab.com/api/v4/projects/76172900
+    mergeRequestsAccessLevel: enabled
+    mergeRequestsEnabled: true
+    nameWithNamespace: Second group / dev-subgroup / project-to-import
+    namespace:
+      ID: 117974298
+      avatarURL: ""
+      fullPath: second-group4402342/dev-subgroup
+      kind: group
+      name: dev-subgroup
+      path: dev-subgroup
+      webURL: https://gitlab.com/groups/second-group4402342/dev-subgroup
+    pathWithNamespace: second-group4402342/dev-subgroup/project-to-import
+    permissions:
+      groupAccess:
+        accessLevel: 50
+        notificationLevel: 3
+    public: true
+    serviceDeskAddress: contact-project+second-group4402342-dev-subgroup-project-to-import-76172900-issue-@incoming.gitlab.com
+    snippetsAccessLevel: enabled
+    snippetsEnabled: true
+    sshUrlToRepo: git@gitlab.com:second-group4402342/dev-subgroup/project-to-import.git
+    webUrl: https://gitlab.com/second-group4402342/dev-subgroup/project-to-import
+    wikiAccessLevel: enabled
+    wikiEnabled: true
+  conditions:
+  - lastTransitionTime: "2025-11-18T15:24:46Z"
+    observedGeneration: 2
+    reason: Creating
+    status: "False"
+    type: Ready
+  - lastTransitionTime: "2025-11-20T09:59:46Z"
+    message: 'create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects:
+      400 {message: {name: [has already been taken]}, {path: [has already been taken]},
+      {project_namespace.name: [has already been taken]}}'
+    observedGeneration: 2
+    reason: ReconcileError
+    status: "False"
+    type: Synced
