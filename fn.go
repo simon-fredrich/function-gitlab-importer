@@ -108,7 +108,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				f.log.Info("Processing Project.", "name", name)
 				// check if external-name is already set in observed resource
 				currentExternalName, err := internal.GetExternalNameFromObserved(obs)
-				if currentExternalName =! "" {
+				if currentExternalName != "" {
 					f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
 					f.log.Info("Copy external-name from observed to desired")
 					internal.SetExternalNameOnDesired(des, currentExternalName)
