@@ -79,6 +79,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		f.log.Info("des", "name", name)
 	}
 
+	updated := false
+
 	for name, obs := range resources.GetObserved() {
 		f.log.Debug("Information about observed resource",
 			"composition-resource-name", name,
@@ -94,7 +96,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 		// check if error message matches
 		conditionSynced := obs.Resource.GetCondition("Synced")
-		if strings.Contains(conditionSynced.Message, nameError) || strings.Contains(conditionSynced.Message, pathError) || strings.Contains(conditionSynced.Message, namespaceError) {
+		if conditionSynced.Status == "False" &&
+			(strings.Contains(conditionSynced.Message, nameError) ||
+				strings.Contains(conditionSynced.Message, pathError) ||
+				strings.Contains(conditionSynced.Message, namespaceError)) {
 			obsGroup := obs.Resource.GroupVersionKind().Group
 			obsKind := obs.Resource.GroupVersionKind().Kind
 			// TODO: relocate code for project/group into function
@@ -137,6 +142,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				f.log.Debug("ExternalName set successfully", "name", name, "projectId", projectId)
 				f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
 				f.log.Info("Annotations after processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
+
+				updated = true
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 				f.log.Info("found group")
 			}
@@ -144,9 +151,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// Commit all changes once
-	if err := response.SetDesiredComposedResources(rsp, resources.GetDesired()); err != nil {
-		f.log.Info("Failed to set desired composed resources", "err", err)
-		response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
+	if updated {
+		if err := response.SetDesiredComposedResources(rsp, resources.GetDesired()); err != nil {
+			f.log.Info("Failed to set desired composed resources", "err", err)
+			response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
+		}
 	}
 
 	// You can set a custom status condition on the claim. This allows you to
