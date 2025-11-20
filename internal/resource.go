@@ -87,6 +87,11 @@ func SetExternalNameOnDesired(des *resource.DesiredComposed, externalName string
 	}
 
 	annotations := des.Resource.GetAnnotations()
+
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+
 	annotations["crossplane.io/external-name"] = externalName
 	des.Resource.SetAnnotations(annotations)
 
