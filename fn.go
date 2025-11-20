@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
@@ -24,6 +25,9 @@ type Function struct {
 // TODO: custom url - maybe don't need url at all
 // TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab
 const errorMessage = "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
+const nameError = "name: [has already been taken]"
+const pathError = "path: [has already been taken]"
+const namespaceError = "project_namespace.name: [has already been taken]"
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
@@ -66,6 +70,14 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	f.log.Debug("resources found", "des", resources.GetDesired(), "obs", resources.GetObserved())
+	f.log.Info("Observed resources found")
+	for name, _ := range resources.GetObserved() {
+		f.log.Info("obs", "name", name)
+	}
+	f.log.Info("Desired resources found")
+	for name, _ := range resources.GetDesired() {
+		f.log.Info("des", "name", name)
+	}
 
 	for name, obs := range resources.GetObserved() {
 		f.log.Debug("Information about observed resource",
@@ -73,66 +85,49 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			"APIVersion", obs.Resource.GetAPIVersion(),
 			"Kind", obs.Resource.GetKind())
 
-		// nothing to do when external-name is already set
-		externalName, err := resources.GetExternalName(name)
-		if err == nil && externalName != "" {
-			f.log.Info("ExternalName already set", "name", name, "externalName", externalName)
-			continue
-		}
-		if err != nil {
-			f.log.Info("cannot get externalName", "name", name, "err", err)
-		}
-
 		// ensure there is a matching desired resource we can update
-		desiredMap := resources.GetDesired()
-		desiredRes, ok := desiredMap[name]
+		_, ok := resources.GetDesired()[name]
 		if !ok {
 			f.log.Info("no corresponding desired resource found; skipping", "name", name)
 			continue
 		}
 
-		// TODO: desiredRes.Resource.SetAnnotations()
-		// TODO: deriredRes.Resource.GetAnnotations()
-		f.log.Info("desiredRes", "annotations", desiredRes.Resource.GetAnnotations())
-
 		// check if error message matches
-
 		conditionSynced := obs.Resource.GetCondition("Synced")
-		if conditionSynced.Message == errorMessage {
-			f.log.Info("found specified error message")
+		if strings.Contains(conditionSynced.Message, nameError) || strings.Contains(conditionSynced.Message, pathError) || strings.Contains(conditionSynced.Message, namespaceError) {
 			obsGroup := obs.Resource.GroupVersionKind().Group
 			obsKind := obs.Resource.GroupVersionKind().Kind
 			// TODO: relocate code for project/group into function
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
-				f.log.Info("found project resource in cluster", "name", name, "obs", obs)
+				f.log.Info("Annotations before processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
+				f.log.Info("Processing Project.", "name", name)
 				clientGitlab, err := internal.LoadClientGitlab(in)
 				if err != nil {
-					f.log.Debug("cannot get gitlab-client", "err", err)
-					f.log.Info("cannot initialize client")
+					f.log.Debug("cannot init gitlab-client", "err", err)
+					f.log.Info("cannot init gitlab-client", "err", err)
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get client: %v", err)))
 					continue
 				}
 
 				projectNamespace, err := resources.GetNamespaceId(name)
-				f.log.Info("display projectNamespace if possible", "projectNamespace", projectNamespace)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectNamespace: %v", err)))
 					continue
 				}
+
 				projectPath, err := resources.GetPath(name)
-				f.log.Info("display projectPath if possible", "projectPath", projectPath)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectPath: %v", err)))
 					continue
 				}
 				projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
-				f.log.Info("display projectId if found using client", "projectId", projectId)
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectId: %v", err)))
 					continue
 				}
 
-				f.log.Debug("Found projectId!", "projectId", projectId)
+				f.log.Debug("Found projectId!", "projectNamespace", projectNamespace, "projectPath", projectPath, "projectId", projectId)
+				f.log.Info("Found projectId!", "projectNamespace", projectNamespace, "projectPath", projectPath, "projectId", projectId)
 
 				err = resources.SetExternalName(name, strconv.Itoa(projectId))
 				if err != nil {
@@ -141,6 +136,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				}
 				f.log.Debug("ExternalName set successfully", "name", name, "projectId", projectId)
 				f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
+				f.log.Info("Annotations after processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 				f.log.Info("found group")
 			}
