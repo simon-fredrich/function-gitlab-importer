@@ -80,7 +80,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// 	f.log.Info("des", "name", name, "external-name", des.Resource.GetAnnotations()["crossplane.io/external-name"])
 	// }
 
-	update := false
+	// update := false
+	desResourcesWithUpdate := make(map[resource.Name]*resource.DesiredComposed)
 
 	for name, obs := range resources.GetObserved() {
 		f.log.Debug("Information about observed resource",
@@ -108,15 +109,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				f.log.Info("Processing Project.", "name", name)
 				// check if external-name is already set in observed resource
 				currentExternalName, err := internal.GetExternalNameFromObserved(obs)
-				if currentExternalName != "" {
-					f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
-					f.log.Info("Copy external-name from observed to desired")
+				if currentExternalName != "" && err != nil {
+					f.log.Info("External name already set in observed; copy external-name to desired resource", "name", name, "externalName", currentExternalName)
 					internal.SetExternalNameOnDesired(des, currentExternalName)
+					desResourcesWithUpdate[name] = des
 					f.log.Info("Copied annotations from observed to desired resource", "annotations", des.Resource.GetAnnotations())
-					update = true
+					// update = true
 					continue
 				}
-				projectId, err := f.fetchExternalNameFromGitlab(des, in)
+				projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp)
 				if err != nil {
 					f.log.Info("external name could not be fetched from gitlab", "err", err)
 					continue
@@ -130,8 +131,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				f.log.Debug("ExternalName set successfully", "name", name, "projectId", projectId)
 				f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
 				f.log.Info("Annotations after processing", "annotations", des.Resource.GetAnnotations())
-
-				update = true
+				desResourcesWithUpdate[name] = des
+				// update = true
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 				f.log.Info("found group")
 			}
@@ -139,12 +140,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// Commit all changes once
-	if update {
-		if err := response.SetDesiredComposedResources(rsp, resources.GetDesired()); err != nil {
-			f.log.Info("Failed to set desired composed resources", "err", err)
-			response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
-		}
+	// if update {
+	if err := response.SetDesiredComposedResources(rsp, desResourcesWithUpdate); err != nil {
+		f.log.Info("Failed to set desired composed resources", "err", err)
+		response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
 	}
+	// }
 
 	// You can set a custom status condition on the claim. This allows you to
 	// communicate with the user. See the link below for status condition
@@ -156,11 +157,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	return rsp, nil
 }
 
-func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in *v1beta1.Input) (int, error) {
+func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse) (int, error) {
 	clientGitlab, err := internal.LoadClientGitlab(in)
 	if err != nil {
 		f.log.Debug("cannot init gitlab-client", "err", err)
 		f.log.Info("cannot init gitlab-client", "err", err)
+		response.Warning(rsp, errors.Wrap(err, "gitlab lookup failed")).TargetCompositeAndClaim()
 		return -1, errors.Errorf("cannot init gitlab-client: %v", err)
 	}
 
