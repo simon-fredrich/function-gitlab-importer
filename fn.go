@@ -69,15 +69,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	f.log.Debug("resources found", "des", resources.GetDesired(), "obs", resources.GetObserved())
-	f.log.Info("Observed resources found")
-	for name, obs := range resources.GetObserved() {
-		f.log.Info("obs", "name", name, "external-name", obs.Resource.GetAnnotations()["crossplane.io/external-name"])
-	}
-	f.log.Info("Desired resources found")
-	for name, des := range resources.GetDesired() {
-		f.log.Info("des", "name", name, "external-name", des.Resource.GetAnnotations()["crossplane.io/external-name"])
-	}
+	// f.log.Debug("resources found", "des", resources.GetDesired(), "obs", resources.GetObserved())
+	// f.log.Info("Observed resources found")
+	// for name, obs := range resources.GetObserved() {
+	// 	f.log.Info("obs", "name", name, "external-name", obs.Resource.GetAnnotations()["crossplane.io/external-name"])
+	// }
+	// f.log.Info("Desired resources found")
+	// for name, des := range resources.GetDesired() {
+	// 	f.log.Info("des", "name", name, "external-name", des.Resource.GetAnnotations()["crossplane.io/external-name"])
+	// }
 
 	update := false
 
@@ -109,8 +109,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				currentExternalName := obs.Resource.GetAnnotations()["crossplane.io/external-name"]
 				if currentExternalName != "" {
 					f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
+					f.log.Info("Copy external-name from observed to desired")
 					resources.SetExternalName(name, currentExternalName)
-					f.log.Info("Annotations after processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
+					f.log.Info("Copied annotations from observed to desired resource", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
 					update = true
 					continue
 				}
