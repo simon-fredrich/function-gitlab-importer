@@ -71,12 +71,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	f.log.Debug("resources found", "des", resources.GetDesired(), "obs", resources.GetObserved())
 	f.log.Info("Observed resources found")
-	for name, _ := range resources.GetObserved() {
-		f.log.Info("obs", "name", name)
+	for name, obs := range resources.GetObserved() {
+		f.log.Info("obs", "name", name, "external-name", obs.Resource.GetAnnotations()["crossplane.io/external-name"])
 	}
 	f.log.Info("Desired resources found")
-	for name, _ := range resources.GetDesired() {
-		f.log.Info("des", "name", name)
+	for name, des := range resources.GetDesired() {
+		f.log.Info("des", "name", name, "external-name", des.Resource.GetAnnotations()["crossplane.io/external-name"])
 	}
 
 	updated := false
