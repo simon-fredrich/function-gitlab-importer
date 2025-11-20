@@ -94,13 +94,6 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			continue
 		}
 
-		// check if external-name is already set in observed resource
-		currentExternalName := obs.Resource.GetAnnotations()["crossplane.io/external-name"]
-		if currentExternalName != "" {
-			f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
-			continue
-		}
-
 		// check if error message matches
 		conditionSynced := obs.Resource.GetCondition("Synced")
 		if conditionSynced.Status == "False" &&
@@ -112,6 +105,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			// TODO: relocate code for project/group into function
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
 				f.log.Info("Annotations before processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
+				// check if external-name is already set in observed resource
+				currentExternalName := obs.Resource.GetAnnotations()["crossplane.io/external-name"]
+				if currentExternalName != "" {
+					f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
+					resources.SetExternalName(name, currentExternalName)
+					continue
+				}
 				f.log.Info("Processing Project.", "name", name)
 				clientGitlab, err := internal.LoadClientGitlab(in)
 				if err != nil {
