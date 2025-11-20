@@ -66,7 +66,7 @@ func GetPath(des *resource.DesiredComposed) (string, error) {
 }
 
 func GetExternalNameFromDesired(des *resource.DesiredComposed) (string, error) {
-	externalName := des.Resource.GetAnnotations()[externalNameAnnotationPath]
+	externalName := des.Resource.GetAnnotations()["crossplane.io/external-name"]
 	if externalName == "" {
 		return "", fmt.Errorf("external-name from desired resource is empty")
 	}
@@ -74,7 +74,7 @@ func GetExternalNameFromDesired(des *resource.DesiredComposed) (string, error) {
 }
 
 func GetExternalNameFromObserved(obs resource.ObservedComposed) (string, error) {
-	externalName := obs.Resource.GetAnnotations()[externalNameAnnotationPath]
+	externalName := obs.Resource.GetAnnotations()["crossplane.io/external-name"]
 	if externalName == "" {
 		return "", fmt.Errorf("external-name from observed resource is empty")
 	}
@@ -86,9 +86,9 @@ func SetExternalNameOnDesired(des *resource.DesiredComposed, externalName string
 		return fmt.Errorf("external-name is empty")
 	}
 
-	annotations := make(map[string]string)
-	annotations[externalNameAnnotationPath] = externalName
-	meta.AddAnnotations(des.Resource, annotations)
+	annotations := des.Resource.GetAnnotations()
+	annotations["crossplane.io/external-name"] = externalName
+	des.Resource.SetAnnotations(annotations)
 
 	return nil
 }
