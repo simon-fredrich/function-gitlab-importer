@@ -10,6 +10,7 @@ import (
 	"github.com/crossplane/function-sdk-go/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
+	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	"github.com/simon-fredrich/function-gitlab-importer/internal"
@@ -88,7 +89,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			"Kind", obs.Resource.GetKind())
 
 		// ensure there is a matching desired resource we can update
-		_, ok := resources.GetDesired()[name]
+		des, ok := resources.GetDesired()[name]
 		if !ok {
 			f.log.Info("no corresponding desired resource found; skipping", "name", name)
 			continue
@@ -104,54 +105,31 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			obsKind := obs.Resource.GroupVersionKind().Kind
 			// TODO: relocate code for project/group into function
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
-				f.log.Info("Annotations before processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
+				f.log.Info("Processing Project.", "name", name)
 				// check if external-name is already set in observed resource
-				currentExternalName := obs.Resource.GetAnnotations()["crossplane.io/external-name"]
-				if currentExternalName != "" {
+				currentExternalName, err := internal.GetExternalNameFromObserved(obs)
+				if currentExternalName =! "" {
 					f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
 					f.log.Info("Copy external-name from observed to desired")
-					resources.SetExternalName(name, currentExternalName)
-					f.log.Info("Copied annotations from observed to desired resource", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
+					internal.SetExternalNameOnDesired(des, currentExternalName)
+					f.log.Info("Copied annotations from observed to desired resource", "annotations", des.Resource.GetAnnotations())
 					update = true
 					continue
 				}
-				f.log.Info("Processing Project.", "name", name)
-				clientGitlab, err := internal.LoadClientGitlab(in)
+				projectId, err := f.fetchExternalNameFromGitlab(des, in)
 				if err != nil {
-					f.log.Debug("cannot init gitlab-client", "err", err)
-					f.log.Info("cannot init gitlab-client", "err", err)
-					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get client: %v", err)))
+					f.log.Info("external name could not be fetched from gitlab", "err", err)
 					continue
 				}
 
-				projectNamespace, err := resources.GetNamespaceId(name)
-				if err != nil {
-					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectNamespace: %v", err)))
-					continue
-				}
-
-				projectPath, err := resources.GetPath(name)
-				if err != nil {
-					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectPath: %v", err)))
-					continue
-				}
-				projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
-				if err != nil {
-					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot get projectId: %v", err)))
-					continue
-				}
-
-				f.log.Debug("Found projectId!", "projectNamespace", projectNamespace, "projectPath", projectPath, "projectId", projectId)
-				f.log.Info("Found projectId!", "projectNamespace", projectNamespace, "projectPath", projectPath, "projectId", projectId)
-
-				err = resources.SetExternalName(name, strconv.Itoa(projectId))
+				err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectId))
 				if err != nil {
 					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
 					continue
 				}
 				f.log.Debug("ExternalName set successfully", "name", name, "projectId", projectId)
 				f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
-				f.log.Info("Annotations after processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
+				f.log.Info("Annotations after processing", "annotations", des.Resource.GetAnnotations())
 
 				update = true
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
@@ -176,4 +154,31 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		TargetCompositeAndClaim()
 
 	return rsp, nil
+}
+
+func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in *v1beta1.Input) (int, error) {
+	clientGitlab, err := internal.LoadClientGitlab(in)
+	if err != nil {
+		f.log.Debug("cannot init gitlab-client", "err", err)
+		f.log.Info("cannot init gitlab-client", "err", err)
+		return -1, errors.Errorf("cannot init gitlab-client: %v", err)
+	}
+
+	projectNamespace, err := internal.GetNamespaceId(des)
+	if err != nil {
+		return -1, errors.Errorf(fmt.Sprintf("cannot get projectNamespace: %v", err))
+	}
+
+	projectPath, err := internal.GetPath(des)
+	if err != nil {
+		return -1, errors.Errorf("cannot get projectPath: %v", err)
+	}
+	projectId, err := internal.GetProject(clientGitlab, projectNamespace, projectPath)
+	if err != nil {
+		return -1, errors.Errorf("cannot get projectId: %v", err)
+	}
+
+	f.log.Debug("Found projectId!", "projectNamespace", projectNamespace, "projectPath", projectPath, "projectId", projectId)
+	f.log.Info("Found projectId!", "projectNamespace", projectNamespace, "projectPath", projectPath, "projectId", projectId)
+	return projectId, nil
 }
