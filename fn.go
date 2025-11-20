@@ -79,7 +79,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		f.log.Info("des", "name", name, "external-name", des.Resource.GetAnnotations()["crossplane.io/external-name"])
 	}
 
-	updated := false
+	update := false
 
 	for name, obs := range resources.GetObserved() {
 		f.log.Debug("Information about observed resource",
@@ -110,7 +110,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				if currentExternalName != "" {
 					f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
 					resources.SetExternalName(name, currentExternalName)
-					updated = true
+					f.log.Info("Annotations after processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
+					update = true
 					continue
 				}
 				f.log.Info("Processing Project.", "name", name)
@@ -151,7 +152,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
 				f.log.Info("Annotations after processing", "annotations", resources.GetDesired()[name].Resource.GetAnnotations())
 
-				updated = true
+				update = true
 			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 				f.log.Info("found group")
 			}
@@ -159,7 +160,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// Commit all changes once
-	if updated {
+	if update {
 		if err := response.SetDesiredComposedResources(rsp, resources.GetDesired()); err != nil {
 			f.log.Info("Failed to set desired composed resources", "err", err)
 			response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
