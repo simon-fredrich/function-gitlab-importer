@@ -110,6 +110,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				if currentExternalName != "" {
 					f.log.Info("External name already set; skipping update", "name", name, "externalName", currentExternalName)
 					resources.SetExternalName(name, currentExternalName)
+					updated = true
 					continue
 				}
 				f.log.Info("Processing Project.", "name", name)
