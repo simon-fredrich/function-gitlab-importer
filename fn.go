@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
@@ -96,49 +95,49 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		}
 
 		// check if error message matches
-		conditionSynced := obs.Resource.GetCondition("Synced")
-		conditionReady := obs.Resource.GetCondition("Ready")
-		if conditionSynced.Status == "True" && conditionReady.Status == "True" {
-			f.log.Info("'Synced' and 'Ready' both 'True' -> skipping resource", "name", name)
-			continue
-		}
-		if conditionSynced.Status == "False" &&
-			(strings.Contains(conditionSynced.Message, nameError) ||
-				strings.Contains(conditionSynced.Message, pathError) ||
-				strings.Contains(conditionSynced.Message, namespaceError)) {
-			obsGroup := obs.Resource.GroupVersionKind().Group
-			obsKind := obs.Resource.GroupVersionKind().Kind
-			// TODO: relocate code for project/group into function
-			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
-				f.log.Info("Processing Project.", "name", name)
-				// check if external-name is already set in observed resource
-				currentExternalName := internal.GetExternalNameFromObserved(obs)
-				desiredExternalName := internal.GetExternalNameFromDesired(des)
-				if currentExternalName != "" {
-					f.log.Info("External name already set in observed; copy external-name to desired resource", "name", name, "externalName", currentExternalName)
-					internal.SetExternalNameOnDesired(des, currentExternalName)
-				} else if desiredExternalName != "" {
-					internal.SetExternalNameOnDesired(des, desiredExternalName)
-				} else {
-					projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp)
-					if err != nil {
-						f.log.Info("external name could not be fetched from gitlab", "err", err)
-						continue
-					}
-
-					err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectId))
-					if err != nil {
-						response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
-						continue
-					}
-					f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
+		// conditionSynced := obs.Resource.GetCondition("Synced")
+		// conditionReady := obs.Resource.GetCondition("Ready")
+		// if conditionSynced.Status == "True" && conditionReady.Status == "True" {
+		// 	f.log.Info("'Synced' and 'Ready' both 'True' -> skipping resource", "name", name)
+		// 	continue
+		// }
+		// if conditionSynced.Status == "False" &&
+		// 	(strings.Contains(conditionSynced.Message, nameError) ||
+		// 		strings.Contains(conditionSynced.Message, pathError) ||
+		// 		strings.Contains(conditionSynced.Message, namespaceError)) {
+		obsGroup := obs.Resource.GroupVersionKind().Group
+		obsKind := obs.Resource.GroupVersionKind().Kind
+		// TODO: relocate code for project/group into function
+		if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
+			f.log.Info("Processing Project.", "name", name)
+			// check if external-name is already set in observed resource
+			currentExternalName := internal.GetExternalNameFromObserved(obs)
+			desiredExternalName := internal.GetExternalNameFromDesired(des)
+			if currentExternalName != "" {
+				f.log.Info("External name already set in observed; copy external-name to desired resource", "name", name, "externalName", currentExternalName)
+				internal.SetExternalNameOnDesired(des, currentExternalName)
+			} else if desiredExternalName != "" {
+				internal.SetExternalNameOnDesired(des, desiredExternalName)
+			} else {
+				projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp)
+				if err != nil {
+					f.log.Info("external name could not be fetched from gitlab", "err", err)
+					continue
 				}
-				desResourcesWithUpdate[name] = des
-				f.log.Info("Annotations after processing", "annotations", des.Resource.GetAnnotations())
-			} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
-				f.log.Info("found group")
+
+				err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectId))
+				if err != nil {
+					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
+					continue
+				}
+				f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
 			}
+			desResourcesWithUpdate[name] = des
+			f.log.Info("Annotations after processing", "annotations", des.Resource.GetAnnotations())
+		} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
+			f.log.Info("found group")
 		}
+		// }
 	}
 
 	f.log.Info("rsp BEFORE update", "rsp.Desired.Resources", rsp.Desired.Resources, "desResourcesWithUpdate", desResourcesWithUpdate)
