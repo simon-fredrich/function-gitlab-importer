@@ -141,6 +141,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		}
 	}
 
+	f.log.Info("Are desired resources in the response?", "rsp.Desired.Resources", rsp.Desired.Resources, "desResourcesWithUpdate", desResourcesWithUpdate)
+
 	// Commit all changes once
 	if err := response.SetDesiredComposedResources(rsp, desResourcesWithUpdate); err != nil {
 		f.log.Info("Failed to set desired composed resources", "err", err)
