@@ -112,6 +112,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			// TODO: relocate code for project/group into function
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
 				f.log.Info("Processing Project.", "name", name)
+				desiredExternalName, err := internal.GetExternalNameFromDesired(des)
+				if err != nil {
+					f.log.Info("desired has external-name", "name", name, "external-name", desiredExternalName)
+				}
 				// check if external-name is already set in observed resource
 				currentExternalName, err := internal.GetExternalNameFromObserved(obs)
 				if currentExternalName != "" && err == nil {
