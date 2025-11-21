@@ -83,12 +83,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		obsKind := obs.Resource.GroupVersionKind().Kind
 		// TODO: relocate code for project/group into function
 		if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
-			f.log.Info("Processing Project.", "name", name)
+			f.log.Info("processing resource...", "kind", obsKind, "name", name)
 			// check if external-name is already set in observed resource
 			currentExternalName := internal.GetExternalNameFromObserved(obs)
 			desiredExternalName := internal.GetExternalNameFromDesired(des)
 			if currentExternalName != "" {
-				f.log.Info("External name already set in observed; copy external-name to desired resource", "name", name, "externalName", currentExternalName)
+				f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "externalName", currentExternalName)
 				internal.SetExternalNameOnDesired(des, currentExternalName)
 			} else if desiredExternalName != "" {
 				internal.SetExternalNameOnDesired(des, desiredExternalName)
@@ -100,10 +100,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					(strings.Contains(conditionSynced.Message, nameError) ||
 						strings.Contains(conditionSynced.Message, pathError) ||
 						strings.Contains(conditionSynced.Message, namespaceError)) {
-					f.log.Info("could not create project on gitlab, because it already exists; fetching external-name from gitlab")
+					f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
 					projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp)
 					if err != nil {
-						f.log.Info("external name could not be fetched from gitlab", "err", err)
+						f.log.Info("external-name could not be fetched from gitlab", "err", err)
 						continue
 					}
 
@@ -112,7 +112,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 						response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
 						continue
 					}
-					f.log.Info("external-name has been found on gitlab and set successfully onto desired resource", "name", name, "projectId", projectId)
+					f.log.Info("external-name aquired on gitlab and written to desired resource", "name", name, "projectId", projectId)
 				} else {
 					f.log.Info("project-resource in transition...")
 				}
@@ -162,7 +162,6 @@ func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in
 		return -1, errors.Errorf("cannot get projectId: %v", err)
 	}
 
-	f.log.Debug("Found projectId!", "projectNamespace", projectNamespace, "projectPath", projectPath, "projectId", projectId)
 	f.log.Info("Found projectId!", "projectNamespace", projectNamespace, "projectPath", projectPath, "projectId", projectId)
 	return projectId, nil
 }
