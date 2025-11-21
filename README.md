@@ -48,3 +48,37 @@ $ crossplane render \
   --include-context \
   xr.yaml composition.yaml functions.yaml
 ```
+## Operate Function in Production
+Setup a DeploymentRuntimeConfig alongside your your function.
+```yaml
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-gitlab-importer
+spec:
+  package: ghcr.io/simon-fredrich/function-gitlab-importer:<tag>
+  runtimeConfigRef:
+    name: gitlab-credentials-config
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: gitlab-credentials-config
+spec:
+  deploymentTemplate:
+    spec:
+      selector: {}
+      template:
+        spec:
+          containers:
+            - name: package-runtime
+              env:
+                - name: GITLAB_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      key: token
+                      name: gitlab-credentials
+                - name: GITLAB_URL
+                  value: https://gitlab.com/
+```
