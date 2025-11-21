@@ -100,7 +100,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					(strings.Contains(conditionSynced.Message, nameError) ||
 						strings.Contains(conditionSynced.Message, pathError) ||
 						strings.Contains(conditionSynced.Message, namespaceError)) {
-					f.log.Info("could not create project on gitlab, because it already exists")
+					f.log.Info("could not create project on gitlab, because it already exists; fetching external-name from gitlab")
 					projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp)
 					if err != nil {
 						f.log.Info("external name could not be fetched from gitlab", "err", err)
@@ -112,27 +112,22 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 						response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
 						continue
 					}
-					f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
+					f.log.Info("external-name has been found on gitlab and set successfully onto desired resource", "name", name, "projectId", projectId)
 				} else {
 					f.log.Info("project-resource in transition...")
 				}
 			}
 			desResourcesWithUpdate[name] = des
-			f.log.Info("Annotations after processing", "annotations", des.Resource.GetAnnotations())
 		} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 			f.log.Info("found group")
 		}
 	}
-
-	f.log.Info("rsp BEFORE update", "rsp.Desired.Resources", rsp.Desired.Resources, "desResourcesWithUpdate", desResourcesWithUpdate)
 
 	// Commit all changes once
 	if err := response.SetDesiredComposedResources(rsp, desResourcesWithUpdate); err != nil {
 		f.log.Info("Failed to set desired composed resources", "err", err)
 		response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
 	}
-
-	f.log.Info("rsp AFTER update", "rsp.Desired.Resources", rsp.Desired.Resources, "desResourcesWithUpdate", desResourcesWithUpdate)
 
 	// You can set a custom status condition on the claim. This allows you to
 	// communicate with the user. See the link below for status condition
