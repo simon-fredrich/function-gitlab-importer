@@ -77,6 +77,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	f.log.Info("Desired resources found")
 	for name, des := range resources.GetDesired() {
 		f.log.Info("des", "name", name, "external-name", internal.GetExternalNameFromDesired(des))
+		f.log.Info("desired resources from response", "name", name, "external-name", req.Desired.Resources[string(name)])
 	}
 
 	desResourcesWithUpdate := make(map[resource.Name]*resource.DesiredComposed)
