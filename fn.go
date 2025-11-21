@@ -75,10 +75,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// for name, obs := range resources.GetObserved() {
 	// 	f.log.Info("obs", "name", name, "external-name", obs.Resource.GetAnnotations()["crossplane.io/external-name"])
 	// }
-	// f.log.Info("Desired resources found")
-	// for name, des := range resources.GetDesired() {
-	// 	f.log.Info("des", "name", name, "external-name", des.Resource.GetAnnotations()["crossplane.io/external-name"])
-	// }
+	f.log.Info("Desired resources found")
+	for name, des := range resources.GetDesired() {
+		f.log.Info("des", "name", name, "external-name", internal.GetExternalNameFromDesired(des))
+	}
 
 	desResourcesWithUpdate := make(map[resource.Name]*resource.DesiredComposed)
 
