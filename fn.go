@@ -141,13 +141,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		}
 	}
 
-	f.log.Info("Are desired resources in the response?", "rsp.Desired.Resources", rsp.Desired.Resources, "desResourcesWithUpdate", desResourcesWithUpdate)
+	f.log.Info("rsp BEFORE update", "rsp.Desired.Resources", rsp.Desired.Resources, "desResourcesWithUpdate", desResourcesWithUpdate)
 
 	// Commit all changes once
 	if err := response.SetDesiredComposedResources(rsp, desResourcesWithUpdate); err != nil {
 		f.log.Info("Failed to set desired composed resources", "err", err)
 		response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
 	}
+
+	f.log.Info("rsp AFTER update", "rsp.Desired.Resources", rsp.Desired.Resources, "desResourcesWithUpdate", desResourcesWithUpdate)
 
 	// You can set a custom status condition on the claim. This allows you to
 	// communicate with the user. See the link below for status condition
