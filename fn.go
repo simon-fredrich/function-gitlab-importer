@@ -112,13 +112,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
 				f.log.Info("Processing Project.", "name", name)
 				// check if external-name is already set in observed resource
-				currentExternalName, err := internal.GetExternalNameFromObserved(obs)
-				if err != nil {
-					f.log.Info("Could not get external-name from observed", "err", err)
-				}
+				currentExternalName := internal.GetExternalNameFromObserved(obs)
+				desiredExternalName := internal.GetExternalNameFromDesired(des)
 				if currentExternalName != "" {
 					f.log.Info("External name already set in observed; copy external-name to desired resource", "name", name, "externalName", currentExternalName)
 					internal.SetExternalNameOnDesired(des, currentExternalName)
+				} else if desiredExternalName != "" {
+					internal.SetExternalNameOnDesired(des, desiredExternalName)
 				} else {
 					projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp)
 					if err != nil {
