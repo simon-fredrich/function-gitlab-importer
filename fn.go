@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
@@ -95,17 +96,6 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			continue
 		}
 
-		// check if error message matches
-		// conditionSynced := obs.Resource.GetCondition("Synced")
-		// conditionReady := obs.Resource.GetCondition("Ready")
-		// if conditionSynced.Status == "True" && conditionReady.Status == "True" {
-		// 	f.log.Info("'Synced' and 'Ready' both 'True' -> skipping resource", "name", name)
-		// 	continue
-		// }
-		// if conditionSynced.Status == "False" &&
-		// 	(strings.Contains(conditionSynced.Message, nameError) ||
-		// 		strings.Contains(conditionSynced.Message, pathError) ||
-		// 		strings.Contains(conditionSynced.Message, namespaceError)) {
 		obsGroup := obs.Resource.GroupVersionKind().Group
 		obsKind := obs.Resource.GroupVersionKind().Kind
 		// TODO: relocate code for project/group into function
@@ -120,25 +110,35 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			} else if desiredExternalName != "" {
 				internal.SetExternalNameOnDesired(des, desiredExternalName)
 			} else {
-				projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp)
-				if err != nil {
-					f.log.Info("external name could not be fetched from gitlab", "err", err)
-					continue
-				}
+				// check if error message matches
+				f.log.Info("check condition \"Synced\" for error")
+				conditionSynced := obs.Resource.GetCondition("Synced")
+				if conditionSynced.Status == "False" &&
+					(strings.Contains(conditionSynced.Message, nameError) ||
+						strings.Contains(conditionSynced.Message, pathError) ||
+						strings.Contains(conditionSynced.Message, namespaceError)) {
+					f.log.Info("could not create project on gitlab, because it already exists")
+					projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp)
+					if err != nil {
+						f.log.Info("external name could not be fetched from gitlab", "err", err)
+						continue
+					}
 
-				err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectId))
-				if err != nil {
-					response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
-					continue
+					err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectId))
+					if err != nil {
+						response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
+						continue
+					}
+					f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
+				} else {
+					f.log.Info("something else happened (gitlab-project should not exist already)")
 				}
-				f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
 			}
 			desResourcesWithUpdate[name] = des
 			f.log.Info("Annotations after processing", "annotations", des.Resource.GetAnnotations())
 		} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
 			f.log.Info("found group")
 		}
-		// }
 	}
 
 	f.log.Info("rsp BEFORE update", "rsp.Desired.Resources", rsp.Desired.Resources, "desResourcesWithUpdate", desResourcesWithUpdate)
