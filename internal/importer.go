@@ -86,7 +86,7 @@ func GetGroup(client *gitlab.Client, parentId int, path string) (int, error) {
 			return group.ID, nil
 		}
 	}
-	return -1, fmt.Errorf("there is no project with matching path in parent group with id: %+v", parentId)
+	return -1, fmt.Errorf("there is no group with matching path in parent group with id: %+v", parentId)
 }
 
 // getSubGroups returns all groups of a given parent group
