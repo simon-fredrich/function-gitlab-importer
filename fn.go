@@ -70,25 +70,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	// f.log.Debug("resources found", "des", resources.GetDesired(), "obs", resources.GetObserved())
-	// f.log.Info("Observed resources found")
-	// for name, obs := range resources.GetObserved() {
-	// 	f.log.Info("obs", "name", name, "external-name", obs.Resource.GetAnnotations()["crossplane.io/external-name"])
-	// }
-	f.log.Info("Desired resources found")
-	for name, des := range resources.GetDesired() {
-		f.log.Info("des", "name", name, "external-name", internal.GetExternalNameFromDesired(des))
-		f.log.Info("desired resources from response", "name", name, "external-name", req.Desired.Resources[string(name)])
-	}
-
 	desResourcesWithUpdate := make(map[resource.Name]*resource.DesiredComposed)
-
 	for name, obs := range resources.GetObserved() {
-		f.log.Debug("Information about observed resource",
-			"composition-resource-name", name,
-			"APIVersion", obs.Resource.GetAPIVersion(),
-			"Kind", obs.Resource.GetKind())
-
 		// ensure there is a matching desired resource we can update
 		des, ok := resources.GetDesired()[name]
 		if !ok {
@@ -111,7 +94,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				internal.SetExternalNameOnDesired(des, desiredExternalName)
 			} else {
 				// check if error message matches
-				f.log.Info("check condition \"Synced\" for error")
+				f.log.Info("check condition 'Synced'")
 				conditionSynced := obs.Resource.GetCondition("Synced")
 				if conditionSynced.Status == "False" &&
 					(strings.Contains(conditionSynced.Message, nameError) ||
@@ -131,7 +114,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					}
 					f.log.Info("ExternalName set successfully", "name", name, "projectId", projectId)
 				} else {
-					f.log.Info("something else happened (gitlab-project should not exist already)")
+					f.log.Info("project-resource in transition...")
 				}
 			}
 			desResourcesWithUpdate[name] = des
