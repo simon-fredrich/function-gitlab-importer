@@ -56,7 +56,7 @@ func tokenAndBaseUrlExist(token string, baseUrl string) bool {
 
 // GetProject returns the `projectId` for a given `namespaceId` and `path`
 func GetProject(client *gitlab.Client, namespaceId int, path string) (int, error) {
-	// namespaceId is the ID of the group containing the desired project
+	// namespaceId is the ID of the parentgroup containing the desired project
 	parentId := namespaceId
 
 	// find project based on path
@@ -74,7 +74,10 @@ func GetProject(client *gitlab.Client, namespaceId int, path string) (int, error
 }
 
 // getGroup returns the `groupId` for a given `parentId` and `path`
-func GetGroup(client *gitlab.Client, parentId int, path string) (int, error) {
+func GetGroup(client *gitlab.Client, namespaceId int, path string) (int, error) {
+	// namespaceId is the ID of the parentgroup containing the desired subgroup
+	parentId := namespaceId
+
 	// find group based on path
 	groups, err := getSubGroups(client, parentId)
 	if err != nil {
