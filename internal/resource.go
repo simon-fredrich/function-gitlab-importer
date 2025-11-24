@@ -47,8 +47,14 @@ func (r Resources) GetDesired() map[resource.Name]*resource.DesiredComposed {
 	return r.desiredComposed
 }
 
-func GetNamespaceId(des *resource.DesiredComposed) (int, error) {
-	resourcePath := "spec.forProvider.namespaceId"
+func GetNamespaceId(des *resource.DesiredComposed, obsKind string) (int, error) {
+	var resourcePath string
+	switch obsKind {
+	case "Project":
+		resourcePath = "spec.forProvider.namespaceId"
+	case "Group":
+		resourcePath = "spec.forProvider.parentId"
+	}
 	namespaceId, err := des.Resource.GetInteger(resourcePath)
 	if err != nil {
 		return -1, fmt.Errorf("cannot get namespaceId from resource: %v", err)
