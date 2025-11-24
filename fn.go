@@ -1,11 +1,13 @@
 package main
 
 import (
+	// Standard Library
 	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	// External Packages
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
@@ -13,6 +15,7 @@ import (
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 
+	// Internal Packages
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	"github.com/simon-fredrich/function-gitlab-importer/internal"
 )
