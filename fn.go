@@ -12,6 +12,7 @@ import (
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
+
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	"github.com/simon-fredrich/function-gitlab-importer/internal"
 )
@@ -149,17 +150,17 @@ func (f *Function) handleProjectResource(name resource.Name, obs resource.Observ
 	} else {
 		if f.ifHasAlreadyBeenTaken(obs) {
 			f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
-			projectId, err := f.fetchExternalNameFromGitlab(des, in, rsp, obsKind)
+			projectID, err := f.fetchExternalNameFromGitlab(des, in, rsp, obsKind)
 			if err != nil {
 				f.log.Info("external-name could not be fetched from gitlab", "err", err)
 				return false
 			}
-			err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectId))
+			err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectID))
 			if err != nil {
 				response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
 				return false
 			}
-			f.log.Info("external-name acquired on gitlab and written to desired resource", "name", name, "external-name", projectId)
+			f.log.Info("external-name acquired on gitlab and written to desired resource", "name", name, "external-name", projectID)
 		} else {
 			f.log.Info(fmt.Sprintf("%v in transition...", obsKind))
 		}
@@ -189,17 +190,17 @@ func (f *Function) handleGroupResource(name resource.Name, obs resource.Observed
 	} else {
 		if f.ifHasAlreadyBeenTaken(obs) {
 			f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
-			groupId, err := f.fetchExternalNameFromGitlab(des, in, rsp, obsKind)
+			groupID, err := f.fetchExternalNameFromGitlab(des, in, rsp, obsKind)
 			if err != nil {
 				f.log.Info("external-name could not be fetched from gitlab", "err", err)
 				return false
 			}
-			err = internal.SetExternalNameOnDesired(des, strconv.Itoa(groupId))
+			err = internal.SetExternalNameOnDesired(des, strconv.Itoa(groupID))
 			if err != nil {
 				response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
 				return false
 			}
-			f.log.Info("external-name acquired on gitlab and written to desired resource", "name", name, "external-name", groupId)
+			f.log.Info("external-name acquired on gitlab and written to desired resource", "name", name, "external-name", groupID)
 		} else {
 			f.log.Info(fmt.Sprintf("%v in transition...", obsKind))
 		}
@@ -220,7 +221,7 @@ func (f *Function) ifHasAlreadyBeenTaken(obs resource.ObservedComposed) bool {
 	return conditionSynced.Status == "False" && strings.Contains(conditionSynced.Message, "has already been taken")
 }
 
-// TODO: refactor into goup and project specific functions
+// TODO: refactor into goup and project specific functions.
 // fetchExternalNameFromGitlab finds a gitlab project or group based on clientGitlab, namespace and path.
 func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse, obsKind string) (int, error) {
 	clientGitlab, err := internal.LoadClientGitlab(in)
