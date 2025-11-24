@@ -8,7 +8,7 @@ import (
 	"github.com/crossplane/function-sdk-go/resource"
 )
 
-// Type to store both observed and desired composed resources for ease of access.
+// Resources stores both observed and desired composed resources for ease of access.
 type Resources struct {
 	observedComposed map[resource.Name]resource.ObservedComposed
 	desiredComposed  map[resource.Name]*resource.DesiredComposed
@@ -20,13 +20,13 @@ func GetResources(req *fnv1.RunFunctionRequest) (Resources, error) {
 	// get observed composed resources
 	observed, err := request.GetObservedComposedResources(req)
 	if err != nil {
-		return Resources{}, fmt.Errorf("getting observed composed resources from request: %v", err)
+		return Resources{}, fmt.Errorf("getting observed composed resources from request: %w", err)
 	}
 
 	// get desired composed resources
 	desired, err := request.GetDesiredComposedResources(req)
 	if err != nil {
-		return Resources{}, fmt.Errorf("getting desired composed resources from request: %v", err)
+		return Resources{}, fmt.Errorf("getting desired composed resources from request: %w", err)
 	}
 
 	// store observed and desired composed resources
@@ -48,9 +48,9 @@ func (r Resources) GetDesired() map[resource.Name]*resource.DesiredComposed {
 	return r.desiredComposed
 }
 
-// GetNamespaceId returns the namespaceId of a desired composed resource of kind Project
+// GetNamespaceID returns the namespaceId of a desired composed resource of kind Project
 // as well as Group.
-func GetNamespaceId(des *resource.DesiredComposed, obsKind string) (int, error) {
+func GetNamespaceID(des *resource.DesiredComposed, obsKind string) (int, error) {
 	var resourcePath string
 	switch obsKind {
 	case "Project":
@@ -60,7 +60,7 @@ func GetNamespaceId(des *resource.DesiredComposed, obsKind string) (int, error) 
 	}
 	namespaceId, err := des.Resource.GetInteger(resourcePath)
 	if err != nil {
-		return -1, fmt.Errorf("cannot get namespaceId from resource: %v", err)
+		return -1, fmt.Errorf("cannot get namespaceId from resource: %w", err)
 	}
 	return int(namespaceId), nil
 }
@@ -70,7 +70,7 @@ func GetPath(des *resource.DesiredComposed) (string, error) {
 	resourcePath := "spec.forProvider.path"
 	pathString, err := des.Resource.GetString(resourcePath)
 	if err != nil {
-		return "", fmt.Errorf("cannot get path from resource: %v", err)
+		return "", fmt.Errorf("cannot get path from resource: %w", err)
 	}
 	return pathString, nil
 }

@@ -11,12 +11,12 @@ import (
 )
 
 // LoadClientGitlab creates a new client for the gitlab api.
-// The token must be provided in the environment and the baseUrl
+// The token must be provided in the environment and the BaseURL
 // can be set in the input (searched first) or the environment
 // (searched second).
 func LoadClientGitlab(in *v1beta1.Input) (*gitlab.Client, error) {
-	// try to get baseUrl via input
-	baseUrl := in.BaseUrl
+	// try to get BaseURL via input
+	BaseURL := in.BaseURL
 
 	// try to get token from environment
 	token := os.Getenv("GITLAB_API_KEY")
@@ -24,44 +24,43 @@ func LoadClientGitlab(in *v1beta1.Input) (*gitlab.Client, error) {
 		return nil, errors.New("token could not be retrieved from environment")
 	}
 
-	// either use baseUrl from input or from environment
-	if baseUrl != "" {
-		// create a new instance of the gitlab api "client-go" using baseUrl from input
-		client, err := gitlab.NewClient(token, gitlab.WithBaseURL(baseUrl+"/api/v4"))
+	// either use BaseURL from input or from environment
+	if BaseURL != "" {
+		// create a new instance of the gitlab api "client-go" using BaseURL from input
+		client, err := gitlab.NewClient(token, gitlab.WithBaseURL(BaseURL+"/api/v4"))
 		if err != nil {
 			return nil, errors.Errorf("creating new client for gitlab api using input: %w", err)
 		}
 		if client == nil {
-			return nil, errors.New("gitlab client is nil (using baseUrl from input)")
-		}
-		return client, nil
-	} else {
-		// try to get baseUrl from environment variables
-		baseUrl = os.Getenv("GITLAB_URL")
-		// if baseUrl not set in environment use default baseUrl
-		if baseUrl == "" {
-			baseUrl = "https://gitlab.com/"
-		}
-
-		// create a new instance of the gitlab api "client-go" using baseUrl from environment or default
-		client, err := gitlab.NewClient(token, gitlab.WithBaseURL(baseUrl+"/api/v4"))
-		if err != nil {
-			return nil, errors.Errorf("creating new client for gitlab api using env: %w", err)
-		}
-		if client == nil {
-			return nil, errors.New("gitlab client is nil (using baseUrl from environment or default)")
+			return nil, errors.New("gitlab client is nil (using BaseURL from input)")
 		}
 		return client, nil
 	}
+	// try to get BaseURL from environment variables
+	BaseURL = os.Getenv("GITLAB_URL")
+	// if BaseURL not set in environment use default BaseURL
+	if BaseURL == "" {
+		BaseURL = "https://gitlab.com/"
+	}
+
+	// create a new instance of the gitlab api "client-go" using BaseURL from environment or default
+	client, err := gitlab.NewClient(token, gitlab.WithBaseURL(BaseURL+"/api/v4"))
+	if err != nil {
+		return nil, errors.Errorf("creating new client for gitlab api using env: %w", err)
+	}
+	if client == nil {
+		return nil, errors.New("gitlab client is nil (using BaseURL from environment or default)")
+	}
+	return client, nil
 }
 
-// GetProject returns the `projectId` for a given `namespaceId` and `path`
-func GetProject(client *gitlab.Client, namespaceId int, path string) (int, error) {
-	// namespaceId is the ID of the parentgroup containing the desired project
-	parentId := namespaceId
+// GetProject returns the `projectID` for a given `namespaceID` and `path`.
+func GetProject(client *gitlab.Client, namespaceID int, path string) (int, error) {
+	// namespaceID is the ID of the parentgroup containing the desired project
+	parentID := namespaceID
 
 	// find project based on path
-	projects, err := getProjects(client, parentId, "")
+	projects, err := getProjects(client, parentID, "")
 	if err != nil {
 		log.Error().Err(err).Msgf("can't get projects")
 		return -1, err
@@ -71,16 +70,16 @@ func GetProject(client *gitlab.Client, namespaceId int, path string) (int, error
 			return project.ID, nil
 		}
 	}
-	return -1, errors.Errorf("there is no project with matching path in namespace with ID %+v", namespaceId)
+	return -1, errors.Errorf("there is no project with matching path in namespace with ID %+v", namespaceID)
 }
 
-// GetGroup returns the `groupId` for a given `parentId` and `path`
-func GetGroup(client *gitlab.Client, namespaceId int, path string) (int, error) {
-	// namespaceId is the ID of the parentgroup containing the desired subgroup
-	parentId := namespaceId
+// GetGroup returns the `groupID` for a given `parentID` and `path`.
+func GetGroup(client *gitlab.Client, namespaceID int, path string) (int, error) {
+	// namespaceID is the ID of the parentgroup containing the desired subgroup
+	parentID := namespaceID
 
 	// find group based on path
-	groups, err := getSubGroups(client, parentId)
+	groups, err := getSubGroups(client, parentID)
 	if err != nil {
 		log.Error().Err(err).Msgf("can't get subgroups")
 		return -1, err
@@ -90,11 +89,11 @@ func GetGroup(client *gitlab.Client, namespaceId int, path string) (int, error) 
 			return group.ID, nil
 		}
 	}
-	return -1, fmt.Errorf("there is no group with matching path in parent group with id: %+v", parentId)
+	return -1, fmt.Errorf("there is no group with matching path in parent group with id: %+v", parentID)
 }
 
-// getSubGroups returns all groups of a given parent group
-func getSubGroups(client *gitlab.Client, groupId int) ([]*gitlab.Group, error) {
+// getSubGroups returns all groups of a given parent group.
+func getSubGroups(client *gitlab.Client, groupID int) ([]*gitlab.Group, error) {
 	subgroupsTotal := []*gitlab.Group{}
 	page := 1
 
@@ -108,7 +107,7 @@ func getSubGroups(client *gitlab.Client, groupId int) ([]*gitlab.Group, error) {
 			},
 		}
 
-		subgroups, resp, err := client.Groups.ListSubGroups(groupId, opt)
+		subgroups, resp, err := client.Groups.ListSubGroups(groupID, opt)
 		if err != nil {
 			log.Error().Err(err).Msgf("gitlab resp: %+v", resp)
 			return nil, err
@@ -124,12 +123,12 @@ func getSubGroups(client *gitlab.Client, groupId int) ([]*gitlab.Group, error) {
 	return subgroupsTotal, nil
 }
 
-// getProjects returns all projects of a given parent group and has
-func getProjects(client *gitlab.Client, groupId int, searchTerm string) ([]*gitlab.Project, error) {
+// getProjects returns all projects of a given parent group.
+func getProjects(client *gitlab.Client, groupID int, searchTerm string) ([]*gitlab.Project, error) {
 	projectsTotal := []*gitlab.Project{}
 	page := 1
 
-	// iterate over all pages to retrieve all possible projects in group with the given groupId
+	// iterate over all pages to retrieve all possible projects in group with the given groupID
 	for {
 		opt := &gitlab.ListGroupProjectsOptions{
 			Search: gitlab.Ptr(searchTerm),
@@ -139,7 +138,7 @@ func getProjects(client *gitlab.Client, groupId int, searchTerm string) ([]*gitl
 			},
 		}
 
-		projects, resp, err := client.Groups.ListGroupProjects(groupId, opt)
+		projects, resp, err := client.Groups.ListGroupProjects(groupID, opt)
 		if err != nil {
 			log.Error().Err(err).Msgf("gitlab resp: %+v", resp)
 			return nil, err

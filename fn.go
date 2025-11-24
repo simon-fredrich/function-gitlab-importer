@@ -23,8 +23,8 @@ type Function struct {
 	log logging.Logger
 }
 
-// TODO: custom url - maybe don't need url at all
-// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab
+// TODO: custom url - maybe don't need url at all.
+// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
 const errorMessage = "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
 const nameError = "name: [has already been taken]"
 const pathError = "path: [has already been taken]"
@@ -61,7 +61,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		f.log.Info("Failed to extract observed and desired composed resources.",
 			"error", err,
 		)
-		response.Fatal(rsp, fmt.Errorf("cannot extract observed and desired composed resources: %v", err))
+		response.Fatal(rsp, fmt.Errorf("cannot extract observed and desired composed resources: %w", err))
 		return rsp, nil
 	}
 
@@ -83,7 +83,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// Commit all changes once
 	if err := response.SetDesiredComposedResources(rsp, desResourcesWithUpdate); err != nil {
 		f.log.Info("Failed to set desired composed resources", "err", err)
-		response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %v", err))
+		response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %w", err))
 	}
 
 	// You can set a custom status condition on the claim. This allows you to
@@ -96,7 +96,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	return rsp, nil
 }
 
-// process gitlab related resources
+// processRecources processes gitlab related resources.
 func (f *Function) processResources(resources internal.Resources, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse) map[resource.Name]*resource.DesiredComposed {
 	// define map to hold desired resources that need an update
 	desResourcesWithUpdate := make(map[resource.Name]*resource.DesiredComposed)
@@ -127,7 +127,7 @@ func (f *Function) processResources(resources internal.Resources, in *v1beta1.In
 	return desResourcesWithUpdate
 }
 
-// handle gitlab project resources to keep their external-name up-to-date
+// handleProjectResources handles gitlab project resources to keep their external-name up-to-date.
 func (f *Function) handleProjectResource(name resource.Name, obs resource.ObservedComposed, des *resource.DesiredComposed, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse, obsKind string) bool {
 	f.log.Info("processing resource...", "kind", obsKind, "name", name)
 	// check if external-name is already set in observed resource
@@ -167,7 +167,7 @@ func (f *Function) handleProjectResource(name resource.Name, obs resource.Observ
 	return true
 }
 
-// handle gitlab group resources to keep their external-name up-to-date
+// handleGroupResource handles gitlab group resources to keep their external-name up-to-date.
 func (f *Function) handleGroupResource(name resource.Name, obs resource.ObservedComposed, des *resource.DesiredComposed, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse, obsKind string) bool {
 	f.log.Info("processing resource...", "kind", obsKind, "name", name)
 	// check if external-name is already set in observed resource
@@ -207,7 +207,8 @@ func (f *Function) handleGroupResource(name resource.Name, obs resource.Observed
 	return true
 }
 
-// determine if a gitlab project or group already exsists externally
+// TODO: refactor into group and project specific functions.
+// ifHasAlreadyBeenTaken determines if a gitlab project or group already exsists externally.
 func (f *Function) ifHasAlreadyBeenTaken(obs resource.ObservedComposed) bool {
 	// check if error message matches
 	f.log.Info("check condition 'Synced'")
@@ -219,7 +220,8 @@ func (f *Function) ifHasAlreadyBeenTaken(obs resource.ObservedComposed) bool {
 	return conditionSynced.Status == "False" && strings.Contains(conditionSynced.Message, "has already been taken")
 }
 
-// find a gitlab project or group based on clientGitlab, namespace and path
+// TODO: refactor into goup and project specific functions
+// fetchExternalNameFromGitlab finds a gitlab project or group based on clientGitlab, namespace and path.
 func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse, obsKind string) (int, error) {
 	clientGitlab, err := internal.LoadClientGitlab(in)
 	if err != nil {
@@ -229,7 +231,7 @@ func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in
 		return -1, errors.Errorf("cannot init gitlab-client: %v", err)
 	}
 
-	namespace, err := internal.GetNamespaceId(des, obsKind)
+	namespace, err := internal.GetNamespaceID(des, obsKind)
 	if err != nil {
 		return -1, errors.Errorf(fmt.Sprintf("cannot get namespace from %v: %v", obsKind, err))
 	}
