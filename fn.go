@@ -6,15 +6,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
+	"github.com/simon-fredrich/function-gitlab-importer/internal"
+
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
-	"github.com/simon-fredrich/function-gitlab-importer/internal"
 )
 
 // Function returns whatever response you ask it to.

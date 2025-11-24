@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/crossplane/function-sdk-go/errors"
-
 	"github.com/rs/zerolog/log"
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
+
+	"github.com/crossplane/function-sdk-go/errors"
 )
 
 // LoadClientGitlab creates a new client for the gitlab api.
