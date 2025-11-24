@@ -4,54 +4,55 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
-// TODO: start function manually with set environment variables i.e. in the container
+// LoadClientGitlab creates a new client for the gitlab api.
+// The token must be provided in the environment and the baseUrl
+// can be set in the input (searched first) or the environment
+// (searched second).
 func LoadClientGitlab(in *v1beta1.Input) (*gitlab.Client, error) {
-	// try to get token and baseUrl via input
-	tokenInput := in.Token
-	baseUrlInput := in.BaseUrl
+	// try to get baseUrl via input
+	baseUrl := in.BaseUrl
 
-	// try to get token and baseUrl via environment variables
-	tokenEnv := os.Getenv("GITLAB_API_KEY")
-	baseUrlEnv := os.Getenv("GITLAB_URL")
+	// try to get token from environment
+	token := os.Getenv("GITLAB_API_KEY")
+	if token == "" {
+		return nil, errors.New("token could not be retrieved from environment")
+	}
 
-	// test token and baseUrl
-	if tokenAndBaseUrlExist(tokenInput, baseUrlInput) {
-		// create a new instance of the gitlab api "client-go"
-		client, err := gitlab.NewClient(tokenInput, gitlab.WithBaseURL(baseUrlInput+"/api/v4"))
+	// either use baseUrl from input or from environment
+	if baseUrl != "" {
+		// create a new instance of the gitlab api "client-go" using baseUrl from input
+		client, err := gitlab.NewClient(token, gitlab.WithBaseURL(baseUrl+"/api/v4"))
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("creating new client for gitlab api using input: %v", err))
+			return nil, errors.Errorf("creating new client for gitlab api using input: %w", err)
 		}
 		if client == nil {
-			return nil, errors.New("gitlab client is nil (using input)")
-		}
-		return client, nil
-	} else if tokenAndBaseUrlExist(tokenEnv, baseUrlEnv) {
-		// create a new instance of the gitlab api "client-go"
-		client, err := gitlab.NewClient(tokenEnv, gitlab.WithBaseURL(baseUrlEnv+"/api/v4"))
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("creating new client for gitlab api using env: %v", err))
-		}
-		if client == nil {
-			return nil, errors.New("gitlab client is nil (using environment variables)")
+			return nil, errors.New("gitlab client is nil (using baseUrl from input)")
 		}
 		return client, nil
 	} else {
-		return nil, errors.New("token and baseUrl are not set in input or env")
-	}
+		// try to get baseUrl from environment variables
+		baseUrl = os.Getenv("GITLAB_URL")
+		// if baseUrl not set in environment use default baseUrl
+		if baseUrl == "" {
+			baseUrl = "https://gitlab.com/"
+		}
 
-}
-
-func tokenAndBaseUrlExist(token string, baseUrl string) bool {
-	if token != "" && baseUrl != "" {
-		return true
+		// create a new instance of the gitlab api "client-go" using baseUrl from environment or default
+		client, err := gitlab.NewClient(token, gitlab.WithBaseURL(baseUrl+"/api/v4"))
+		if err != nil {
+			return nil, errors.Errorf("creating new client for gitlab api using env: %w", err)
+		}
+		if client == nil {
+			return nil, errors.New("gitlab client is nil (using baseUrl from environment or default)")
+		}
+		return client, nil
 	}
-	return false
 }
 
 // GetProject returns the `projectId` for a given `namespaceId` and `path`
@@ -70,10 +71,10 @@ func GetProject(client *gitlab.Client, namespaceId int, path string) (int, error
 			return project.ID, nil
 		}
 	}
-	return -1, fmt.Errorf("there is no project with matching path in namespace with ID %+v", namespaceId)
+	return -1, errors.Errorf("there is no project with matching path in namespace with ID %+v", namespaceId)
 }
 
-// getGroup returns the `groupId` for a given `parentId` and `path`
+// GetGroup returns the `groupId` for a given `parentId` and `path`
 func GetGroup(client *gitlab.Client, namespaceId int, path string) (int, error) {
 	// namespaceId is the ID of the parentgroup containing the desired subgroup
 	parentId := namespaceId
