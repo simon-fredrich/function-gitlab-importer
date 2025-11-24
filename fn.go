@@ -134,10 +134,18 @@ func (f *Function) handleProjectResource(name resource.Name, obs resource.Observ
 	currentExternalName := internal.GetExternalNameFromObserved(obs)
 	desiredExternalName := internal.GetExternalNameFromDesired(des)
 	if currentExternalName != "" {
-		f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "externalName", currentExternalName)
-		internal.SetExternalNameOnDesired(des, currentExternalName)
+		f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "external-name", currentExternalName)
+		err := internal.SetExternalNameOnDesired(des, currentExternalName)
+		if err != nil {
+			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
+			return false
+		}
 	} else if desiredExternalName != "" {
-		internal.SetExternalNameOnDesired(des, desiredExternalName)
+		err := internal.SetExternalNameOnDesired(des, desiredExternalName)
+		if err != nil {
+			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
+			return false
+		}
 	} else {
 		if f.ifHasAlreadyBeenTaken(obs) {
 			f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
@@ -148,10 +156,10 @@ func (f *Function) handleProjectResource(name resource.Name, obs resource.Observ
 			}
 			err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectId))
 			if err != nil {
-				response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
+				response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
 				return false
 			}
-			f.log.Info("external-name aquired on gitlab and written to desired resource", "name", name, "external-name", projectId)
+			f.log.Info("external-name acquired on gitlab and written to desired resource", "name", name, "external-name", projectId)
 		} else {
 			f.log.Info(fmt.Sprintf("%v in transition...", obsKind))
 		}
@@ -166,10 +174,18 @@ func (f *Function) handleGroupResource(name resource.Name, obs resource.Observed
 	currentExternalName := internal.GetExternalNameFromObserved(obs)
 	desiredExternalName := internal.GetExternalNameFromDesired(des)
 	if currentExternalName != "" {
-		f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "externalName", currentExternalName)
-		internal.SetExternalNameOnDesired(des, currentExternalName)
+		f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "external-name", currentExternalName)
+		err := internal.SetExternalNameOnDesired(des, currentExternalName)
+		if err != nil {
+			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
+			return false
+		}
 	} else if desiredExternalName != "" {
-		internal.SetExternalNameOnDesired(des, desiredExternalName)
+		err := internal.SetExternalNameOnDesired(des, desiredExternalName)
+		if err != nil {
+			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
+			return false
+		}
 	} else {
 		if f.ifHasAlreadyBeenTaken(obs) {
 			f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
@@ -180,10 +196,10 @@ func (f *Function) handleGroupResource(name resource.Name, obs resource.Observed
 			}
 			err = internal.SetExternalNameOnDesired(des, strconv.Itoa(groupId))
 			if err != nil {
-				response.Fatal(rsp, errors.New(fmt.Sprintf("cannot set externalName: %v", err)))
+				response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
 				return false
 			}
-			f.log.Info("external-name aquired on gitlab and written to desired resource", "name", name, "external-name", groupId)
+			f.log.Info("external-name acquired on gitlab and written to desired resource", "name", name, "external-name", groupId)
 		} else {
 			f.log.Info(fmt.Sprintf("%v in transition...", obsKind))
 		}
@@ -227,14 +243,14 @@ func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in
 	case "Project":
 		externalName, err := internal.GetProject(clientGitlab, namespace, path)
 		if err != nil {
-			return -1, errors.Errorf("cannot get externalName from %v: %v", obsKind, err)
+			return -1, errors.Errorf("cannot get external-name from %v: %v", obsKind, err)
 		}
 		f.log.Info(fmt.Sprintf("Found %v on gitlab!", obsKind), "namespace", namespace, "path", path, "external-name", externalName)
 		return externalName, nil
 	case "Group":
 		externalName, err := internal.GetGroup(clientGitlab, namespace, path)
 		if err != nil {
-			return -1, errors.Errorf("cannot get externalName from %v: %v", obsKind, err)
+			return -1, errors.Errorf("cannot get external-name from %v: %v", obsKind, err)
 		}
 		f.log.Info(fmt.Sprintf("Found %v on gitlab!", obsKind), "namespace", namespace, "path", path, "external-name", externalName)
 		return externalName, nil
