@@ -196,10 +196,11 @@ func (f *Function) ifHasAlreadyBeenTaken(obs resource.ObservedComposed) bool {
 	// check if error message matches
 	f.log.Info("check condition 'Synced'")
 	conditionSynced := obs.Resource.GetCondition("Synced")
-	return conditionSynced.Status == "False" &&
-		(strings.Contains(conditionSynced.Message, nameError) ||
-			strings.Contains(conditionSynced.Message, pathError) ||
-			strings.Contains(conditionSynced.Message, namespaceError))
+	// return conditionSynced.Status == "False" &&
+	// 	(strings.Contains(conditionSynced.Message, nameError) ||
+	// 		strings.Contains(conditionSynced.Message, pathError) ||
+	// 		strings.Contains(conditionSynced.Message, namespaceError))
+	return conditionSynced.Status == "False" && strings.Contains(conditionSynced.Message, "has already been taken")
 }
 
 // find a gitlab project or group based on clientGitlab, namespace and path
