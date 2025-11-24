@@ -28,15 +28,8 @@ spec:
               may reject unrecognized values.
               more info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
-          example:
-            description: example is an example field. replace it with whatever input
-              you need. :)
-            type: string
-          token:
-            description: token is a field that provides the gitlab-api-key.
-            type: string
-          baseurl:
-            description: baseurl provides the base-url to the gitlab instance.
+          baseURL:
+            description: baseURL provides the baseURL to the gitlab instance.
             type: string
           kind:
             description: |-

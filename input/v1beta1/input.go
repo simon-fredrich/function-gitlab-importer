@@ -16,8 +16,5 @@ type Input struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Example is an example field. Replace it with whatever input you need. :)
-	Example string `json:"example"`
-	Token   string `json:"token"`
-	BaseURL string `json:"baseUrl"`
+	BaseURL string `json:"baseURL"`
 }
