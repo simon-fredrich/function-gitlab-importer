@@ -213,7 +213,7 @@ func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in
 		return -1, errors.Errorf("cannot init gitlab-client: %v", err)
 	}
 
-	namespace, err := internal.GetNamespaceId(des)
+	namespace, err := internal.GetNamespaceId(des, obsKind)
 	if err != nil {
 		return -1, errors.Errorf(fmt.Sprintf("cannot get namespace from %v: %v", obsKind, err))
 	}
