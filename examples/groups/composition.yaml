@@ -1,0 +1,36 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: simple-group
+spec:
+  compositeTypeRef:
+    apiVersion: gitlab.example.org/v1alpha1
+    kind: SimpleGroup
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            ---
+            apiVersion: groups.gitlab.crossplane.io/v1alpha1
+            kind: Group
+            metadata:
+              name: {{ .observed.composite.resource.metadata.name }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ .observed.composite.resource.spec.groupName }}-{{ .observed.composite.resource.metadata.name }}-crn
+            spec:
+              forProvider:
+                name: {{ .observed.composite.resource.spec.groupName }}
+                path: {{ .observed.composite.resource.spec.groupName }}
+                parentId: {{ .observed.composite.resource.spec.namespaceId}}
+              providerConfigRef:
+                name: gitlab-provider
+    - step: check-template
+      functionRef:
+        name: function-gitlab-importer

@@ -1,0 +1,8 @@
+apiVersion: gitlab.example.org/v1alpha1
+kind: SimpleGroup
+metadata:
+  name: simple-group-two
+  namespace: simplegroups.gitlab.example.org
+spec:
+  groupName: group-to-import
+  namespaceId: 117974298
