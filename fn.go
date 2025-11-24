@@ -232,7 +232,7 @@ func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in
 		f.log.Info(fmt.Sprintf("Found %v on gitlab!", obsKind), "namespace", namespace, "path", path, "external-name", externalName)
 		return externalName, nil
 	case "Group":
-		externalName, err := internal.GetProject(clientGitlab, namespace, path)
+		externalName, err := internal.GetGroup(clientGitlab, namespace, path)
 		if err != nil {
 			return -1, errors.Errorf("cannot get externalName from %v: %v", obsKind, err)
 		}
