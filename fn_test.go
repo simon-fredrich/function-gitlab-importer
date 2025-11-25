@@ -23,7 +23,6 @@ var (
 // TODO: ResponseIsReturnedWithChange(right message does change the desired resource with an external-name annotation)
 
 func TestRunFunction(t *testing.T) {
-
 	type args struct {
 		ctx context.Context
 		req *fnv1.RunFunctionRequest
