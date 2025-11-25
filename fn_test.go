@@ -19,8 +19,8 @@ import (
 
 // TODO: import YAML-file + MustStructYAML with YAML-library https://pkg.go.dev/gopkg.in/yaml.v3
 var (
-	xrTrue  = loadDataFromFile("test-cases/simple-function-one-false.json")
-	xrFalse = loadDataFromFile("test-cases/simple-function-one-true.json")
+	xrTrue  = loadDataFromFile("testdata/simple-function-one-false.json")
+	xrFalse = loadDataFromFile("testdata/simple-function-one-true.json")
 )
 
 // TODO: ResponseIsReturnedWithNoChange (wrong message does not change the desired resource)
