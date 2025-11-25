@@ -105,7 +105,6 @@ func (f *Function) processResources(resources internal.Resources, in *v1beta1.In
 
 		obsGroup := obs.Resource.GroupVersionKind().Group
 		obsKind := obs.Resource.GroupVersionKind().Kind
-		// TODO: relocate code for project/group into function
 		if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
 			if f.handleProjectResource(name, obs, des, in, rsp, obsKind) {
 				desResourcesWithUpdate[name] = des
