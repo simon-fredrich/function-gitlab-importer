@@ -202,7 +202,7 @@ func (f *Function) handleGroupResource(name resource.Name, obs resource.Observed
 	return true
 }
 
-// ifGroupHasBeenTaken returns true if the gitlab group could not be created
+// ifGroupHasBeenTaken returns true if the gitlab group could not be created.
 func (f *Function) ifProjectHasBeenTaken(obs resource.ObservedComposed) bool {
 	// TODO: custom url - maybe don't need url at all.
 	// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
@@ -232,7 +232,7 @@ func (f *Function) ifProjectHasBeenTaken(obs resource.ObservedComposed) bool {
 	}
 }
 
-// ifGroupHasBeenTaken returns true if the gitlab group could not be created
+// ifGroupHasBeenTaken returns true if the gitlab group could not be created.
 func (f *Function) ifGroupHasBeenTaken(obs resource.ObservedComposed) bool {
 	// TODO: custom url - maybe don't need url at all.
 	// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
