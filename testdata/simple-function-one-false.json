@@ -1,0 +1,158 @@
+{
+    "apiVersion": "projects.gitlab.crossplane.io/v1alpha1",
+    "kind": "Project",
+    "metadata": {
+        "annotations": {
+            "crossplane.io/composition-resource-name": "project-to-import-simple-function-one-crn",
+            "crossplane.io/external-create-failed": "2025-11-25T13:28:07Z",
+            "crossplane.io/external-create-pending": "2025-11-25T13:28:07Z"
+        },
+        "creationTimestamp": "2025-11-20T10:24:06Z",
+        "finalizers": [
+            "finalizer.managedresource.crossplane.io"
+        ],
+        "generateName": "simple-function-one-",
+        "generation": 2,
+        "labels": {
+            "crossplane.io/claim-name": "",
+            "crossplane.io/claim-namespace": "",
+            "crossplane.io/composite": "simple-function-one"
+        },
+        "name": "simple-function-one",
+        "ownerReferences": [
+            {
+                "apiVersion": "gitlab.example.org/v1alpha1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "SimpleFunction",
+                "name": "simple-function-one",
+                "uid": "2232a04f-1c5b-4fa2-88dd-955c26fc0d91"
+            }
+        ],
+        "resourceVersion": "1156981",
+        "uid": "2f653c4a-b2fa-4a61-b119-0cb3148e0fe9"
+    },
+    "spec": {
+        "deletionPolicy": "Delete",
+        "forProvider": {
+            "allowMergeOnSkippedPipeline": false,
+            "approvalsBeforeMerge": 0,
+            "autocloseReferencedIssues": true,
+            "buildsAccessLevel": "enabled",
+            "ciDefaultGitDepth": 20,
+            "ciForwardDeploymentEnabled": true,
+            "containerRegistryAccessLevel": "enabled",
+            "containerRegistryEnabled": true,
+            "defaultBranch": "main",
+            "forkingAccessLevel": "enabled",
+            "issuesAccessLevel": "enabled",
+            "lfsEnabled": true,
+            "mergeMethod": "merge",
+            "mergeRequestsAccessLevel": "enabled",
+            "mirror": false,
+            "mirrorOverwritesDivergedBranches": false,
+            "mirrorTriggerBuilds": false,
+            "name": "project-to-import",
+            "namespaceId": 117974298,
+            "onlyAllowMergeIfAllDiscussionsAreResolved": false,
+            "onlyAllowMergeIfPipelineSucceeds": false,
+            "onlyMirrorProtectedBranches": false,
+            "packagesEnabled": true,
+            "pagesAccessLevel": "private",
+            "path": "project-to-import",
+            "publicBuilds": true,
+            "removeSourceBranchAfterMerge": true,
+            "repositoryAccessLevel": "enabled",
+            "requestAccessEnabled": true,
+            "resolveOutdatedDiffDiscussions": false,
+            "serviceDeskEnabled": true,
+            "sharedRunnersEnabled": true,
+            "snippetsAccessLevel": "enabled",
+            "visibility": "private",
+            "wikiAccessLevel": "enabled"
+        },
+        "managementPolicies": [
+            "*"
+        ],
+        "providerConfigRef": {
+            "name": "gitlab-provider"
+        }
+    },
+    "status": {
+        "atProvider": {
+            "buildsAccessLevel": "enabled",
+            "containerExpirationPolicy": {
+                "cadence": "1d",
+                "enabled": false,
+                "keepN": 10,
+                "nameRegexDelete": "",
+                "nameRegexKeep": "",
+                "nextRunAt": "2025-11-21T10:23:15Z",
+                "olderThan": "90d"
+            },
+            "createdAt": "2025-11-20T10:23:15Z",
+            "creatorId": 30708844,
+            "httpUrlToRepo": "https://gitlab.com/second-group4402342/dev-subgroup/project-to-import.git",
+            "id": 76230132,
+            "importStatus": "none",
+            "issuesAccessLevel": "enabled",
+            "issuesEnabled": true,
+            "jobsEnabled": true,
+            "lastActivityAt": "2025-11-20T10:23:15Z",
+            "links": {
+                "events": "https://gitlab.com/api/v4/projects/76230132/events",
+                "issues": "https://gitlab.com/api/v4/projects/76230132/issues",
+                "labels": "https://gitlab.com/api/v4/projects/76230132/labels",
+                "members": "https://gitlab.com/api/v4/projects/76230132/members",
+                "mergeRequests": "https://gitlab.com/api/v4/projects/76230132/merge_requests",
+                "repoBranches": "https://gitlab.com/api/v4/projects/76230132/repository/branches",
+                "self": "https://gitlab.com/api/v4/projects/76230132"
+            },
+            "mergeRequestsAccessLevel": "enabled",
+            "mergeRequestsEnabled": true,
+            "nameWithNamespace": "Second group / dev-subgroup / project-to-import",
+            "namespace": {
+                "ID": 117974298,
+                "avatarURL": "",
+                "fullPath": "second-group4402342/dev-subgroup",
+                "kind": "group",
+                "name": "dev-subgroup",
+                "path": "dev-subgroup",
+                "webURL": "https://gitlab.com/groups/second-group4402342/dev-subgroup"
+            },
+            "pathWithNamespace": "second-group4402342/dev-subgroup/project-to-import",
+            "permissions": {
+                "groupAccess": {
+                    "accessLevel": 50,
+                    "notificationLevel": 3
+                }
+            },
+            "public": true,
+            "readmeUrl": "https://gitlab.com/second-group4402342/dev-subgroup/project-to-import/-/blob/main/README.md",
+            "serviceDeskAddress": "contact-project+second-group4402342-dev-subgroup-project-to-import-76230132-issue-@incoming.gitlab.com",
+            "snippetsAccessLevel": "enabled",
+            "snippetsEnabled": true,
+            "sshUrlToRepo": "git@gitlab.com:second-group4402342/dev-subgroup/project-to-import.git",
+            "webUrl": "https://gitlab.com/second-group4402342/dev-subgroup/project-to-import",
+            "wikiAccessLevel": "enabled",
+            "wikiEnabled": true
+        },
+        "conditions": [
+            {
+                "lastTransitionTime": "2025-11-25T13:28:06Z",
+                "observedGeneration": 2,
+                "reason": "Creating",
+                "status": "False",
+                "type": "Ready"
+            },
+            {
+                "lastTransitionTime": "2025-11-25T13:28:06Z",
+                "message": "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}",
+                "observedGeneration": 2,
+                "reason": "ReconcileError",
+                "status": "False",
+                "type": "Synced"
+            }
+        ]
+    }
+}
