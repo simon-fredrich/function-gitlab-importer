@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	"github.com/simon-fredrich/function-gitlab-importer/internal"
@@ -23,13 +22,6 @@ type Function struct {
 
 	log logging.Logger
 }
-
-// TODO: custom url - maybe don't need url at all.
-// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
-const errorMessage = "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
-const nameError = "name: [has already been taken]"
-const pathError = "path: [has already been taken]"
-const namespaceError = "project_namespace.name: [has already been taken]"
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
@@ -134,21 +126,22 @@ func (f *Function) handleProjectResource(name resource.Name, obs resource.Observ
 	// check if external-name is already set in observed resource
 	currentExternalName := internal.GetExternalNameFromObserved(obs)
 	desiredExternalName := internal.GetExternalNameFromDesired(des)
-	if currentExternalName != "" {
+	switch {
+	case currentExternalName != "":
 		f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "external-name", currentExternalName)
 		err := internal.SetExternalNameOnDesired(des, currentExternalName)
 		if err != nil {
 			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
 			return false
 		}
-	} else if desiredExternalName != "" {
+	case desiredExternalName != "":
 		err := internal.SetExternalNameOnDesired(des, desiredExternalName)
 		if err != nil {
 			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
 			return false
 		}
-	} else {
-		if f.ifHasAlreadyBeenTaken(obs) {
+	default:
+		if f.ifProjectHasBeenTaken(obs) {
 			f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
 			projectID, err := f.fetchExternalNameFromGitlab(des, in, rsp, obsKind)
 			if err != nil {
@@ -174,21 +167,22 @@ func (f *Function) handleGroupResource(name resource.Name, obs resource.Observed
 	// check if external-name is already set in observed resource
 	currentExternalName := internal.GetExternalNameFromObserved(obs)
 	desiredExternalName := internal.GetExternalNameFromDesired(des)
-	if currentExternalName != "" {
+	switch {
+	case currentExternalName != "":
 		f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "external-name", currentExternalName)
 		err := internal.SetExternalNameOnDesired(des, currentExternalName)
 		if err != nil {
 			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
 			return false
 		}
-	} else if desiredExternalName != "" {
+	case desiredExternalName != "":
 		err := internal.SetExternalNameOnDesired(des, desiredExternalName)
 		if err != nil {
 			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
 			return false
 		}
-	} else {
-		if f.ifHasAlreadyBeenTaken(obs) {
+	default:
+		if f.ifGroupHasBeenTaken(obs) {
 			f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
 			groupID, err := f.fetchExternalNameFromGitlab(des, in, rsp, obsKind)
 			if err != nil {
@@ -208,17 +202,61 @@ func (f *Function) handleGroupResource(name resource.Name, obs resource.Observed
 	return true
 }
 
-// TODO: refactor into group and project specific functions.
-// ifHasAlreadyBeenTaken determines if a gitlab project or group already exsists externally.
-func (f *Function) ifHasAlreadyBeenTaken(obs resource.ObservedComposed) bool {
+// ifGroupHasBeenTaken returns true if the gitlab group could not be created
+func (f *Function) ifProjectHasBeenTaken(obs resource.ObservedComposed) bool {
+	// TODO: custom url - maybe don't need url at all.
+	// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
+	const errorMessage = "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
+	const nameError = "name: [has already been taken]"
+	const pathError = "path: [has already been taken]"
+	const namespaceError = "project_namespace.name: [has already been taken]"
+
 	// check if error message matches
 	f.log.Info("check condition 'Synced'")
 	conditionSynced := obs.Resource.GetCondition("Synced")
-	// return conditionSynced.Status == "False" &&
-	// 	(strings.Contains(conditionSynced.Message, nameError) ||
-	// 		strings.Contains(conditionSynced.Message, pathError) ||
-	// 		strings.Contains(conditionSynced.Message, namespaceError))
-	return conditionSynced.Status == "False" && strings.Contains(conditionSynced.Message, "has already been taken")
+	switch conditionSynced.Message {
+	case errorMessage:
+		f.log.Info(errorMessage)
+		return true
+	case nameError:
+		f.log.Info(nameError)
+		return true
+	case pathError:
+		f.log.Info(pathError)
+		return true
+	case namespaceError:
+		f.log.Info(namespaceError)
+		return true
+	default:
+		return false
+	}
+}
+
+// ifGroupHasBeenTaken returns true if the gitlab group could not be created
+func (f *Function) ifGroupHasBeenTaken(obs resource.ObservedComposed) bool {
+	// TODO: custom url - maybe don't need url at all.
+	// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
+	const errorMessage = `cannot create Gitlab Group: POST https://gitlab.com/api/v4/groups: 400 {message: Failed to save group {:name=>["has already been taken"], :path=>["has already been taken"]}}`
+	const nameError = `name=>["has already been taken"]`
+	const pathError = `path=>["has already been taken"]`
+
+	// check if error message matches
+	f.log.Info("check condition 'Synced'")
+	conditionSynced := obs.Resource.GetCondition("Synced")
+	switch conditionSynced.Message {
+	case errorMessage:
+		f.log.Info(errorMessage)
+		return true
+	case nameError:
+		f.log.Info(nameError)
+		return true
+	case pathError:
+		f.log.Info(pathError)
+		return true
+	default:
+		f.log.Info(conditionSynced.Message)
+		return false
+	}
 }
 
 // TODO: refactor into goup and project specific functions.
