@@ -1,0 +1,19 @@
+{
+    "apiVersion": "projects.gitlab.crossplane.io/v1alpha1",
+    "kind": "Project",
+    "metadata": {
+        "annotations": {
+            "crossplane.io/composition-resource-name": "project-to-import-simple-function-one-crn",
+            "crossplane.io/external-name": "76230132"
+        }
+    },
+    "status": {
+        "conditions": [
+            {
+                "message": "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}",
+                "status": "False",
+                "type": "Synced"
+            }
+        ]
+    }
+}

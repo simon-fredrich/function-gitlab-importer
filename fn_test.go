@@ -17,10 +17,9 @@ import (
 	"github.com/crossplane/function-sdk-go/response"
 )
 
-// TODO: import YAML-file + MustStructYAML with YAML-library https://pkg.go.dev/gopkg.in/yaml.v3
 var (
-	xrTrue  = loadDataFromFile("testdata/simple-function-one-false.json")
-	xrFalse = loadDataFromFile("testdata/simple-function-one-true.json")
+	externalNameExisting = loadDataFromFile("testdata/external-name-existing.json")
+	// externalNameMissing  = loadDataFromFile("testdata/external-name-missing.json")
 )
 
 // TODO: ResponseIsReturnedWithNoChange (wrong message does not change the desired resource)
@@ -48,12 +47,12 @@ func TestRunFunction(t *testing.T) {
 					Meta: &fnv1.RequestMeta{Tag: "external-name"},
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{
-							Resource: resource.MustStructJSON(xrTrue),
+							Resource: resource.MustStructJSON(externalNameExisting),
 						},
 					},
 					Desired: &fnv1.State{
 						Composite: &fnv1.Resource{
-							Resource: resource.MustStructJSON(xrTrue),
+							Resource: resource.MustStructJSON(externalNameExisting),
 						},
 					},
 				},
@@ -63,7 +62,7 @@ func TestRunFunction(t *testing.T) {
 					Meta: &fnv1.ResponseMeta{Tag: "external-name", Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1.State{
 						Composite: &fnv1.Resource{
-							Resource: resource.MustStructJSON(xrTrue),
+							Resource: resource.MustStructJSON(externalNameExisting),
 						},
 					},
 				},
@@ -87,6 +86,7 @@ func TestRunFunction(t *testing.T) {
 	}
 }
 
+// loadDataFromFile imports a file for processing in tests.
 func loadDataFromFile(filename string) string {
 	data, err := os.ReadFile(filename)
 	if err != nil {
