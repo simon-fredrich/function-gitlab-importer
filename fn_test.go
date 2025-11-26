@@ -17,10 +17,7 @@ import (
 	"github.com/crossplane/function-sdk-go/response"
 )
 
-var (
-	externalNameExisting = loadDataFromFile("testdata/external-name-existing.json")
-	// externalNameMissing  = loadDataFromFile("testdata/external-name-missing.json")
-)
+var externalNameExisting = loadDataFromFile("testdata/external-name-existing.json")
 
 // TODO: ResponseIsReturnedWithNoChange (wrong message does not change the desired resource)
 // TODO: ResponseIsReturnedWithChange(right message does change the desired resource with an external-name annotation)
