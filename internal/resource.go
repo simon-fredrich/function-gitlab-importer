@@ -50,9 +50,9 @@ func (r Resources) GetDesired() map[resource.Name]*resource.DesiredComposed {
 
 // GetNamespaceID returns the namespaceID of a desired composed resource of kind Project
 // as well as Group.
-func GetNamespaceID(des *resource.DesiredComposed, obsKind string) (int, error) {
+func GetNamespaceID(des *resource.DesiredComposed, kind string) (int, error) {
 	var resourcePath string
-	switch obsKind {
+	switch kind {
 	case "Project":
 		resourcePath = "spec.forProvider.namespaceID"
 	case "Group":
