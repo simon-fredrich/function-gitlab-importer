@@ -54,13 +54,13 @@ func GetNamespaceID(des *resource.DesiredComposed, kind string) (int, error) {
 	var resourcePath string
 	switch kind {
 	case "Project":
-		resourcePath = "spec.forProvider.namespaceID"
+		resourcePath = "spec.forProvider.namespaceId"
 	case "Group":
-		resourcePath = "spec.forProvider.parentID"
+		resourcePath = "spec.forProvider.parentId"
 	}
 	namespaceID, err := des.Resource.GetInteger(resourcePath)
 	if err != nil {
-		return -1, fmt.Errorf("cannot get namespaceID from resource: %w", err)
+		return -1, fmt.Errorf("cannot get namespaceId from resource: %w", err)
 	}
 	return int(namespaceID), nil
 }
