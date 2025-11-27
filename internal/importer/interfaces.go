@@ -5,12 +5,16 @@ import (
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 )
 
-type Importer interface {
-	RequiresExternalName(obs resource.ObservedComposed) (bool, error)
-	LoadExternalName(obs resource.ObservedComposed) error
+type Client[T any] interface {
+	LoadClient(in *v1beta1.Input) error
+	GetClient() (T, error)
 }
 
-type Client interface {
-	LoadClient(in *v1beta1.Input) error
-	GetClient() (any, error)
+type Importer interface {
+	RequiresExternalName() bool
+	LoadExternalName() error
+	GetExternalName() string
+	GetObservedComposed() resource.ObservedComposed
+	GetDesiredComposed() *resource.DesiredComposed
+	ResourceAlreadyExists() (string, bool)
 }
