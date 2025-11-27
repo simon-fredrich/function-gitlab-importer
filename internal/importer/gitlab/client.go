@@ -16,7 +16,7 @@ type GitlabClient struct {
 // The token must be provided in the environment and the BaseURL
 // can be set in the input (searched first) or the environment
 // (searched second).
-func (g *GitlabClient) LoadClient(in v1beta1.Input) error {
+func (g *GitlabClient) LoadClient(in *v1beta1.Input) error {
 	// try to get BaseURL via input
 	BaseURL := in.BaseURL
 
