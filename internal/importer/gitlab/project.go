@@ -1,28 +1,98 @@
 package gitlab
 
 import (
+	"strconv"
+
 	"github.com/rs/zerolog/log"
-	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
+	"github.com/simon-fredrich/function-gitlab-importer/internal"
+	"github.com/simon-fredrich/function-gitlab-importer/internal/importer"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/resource"
 )
 
-type GitlabProjectImport struct {
-	Input *v1beta1.Input
+type GitlabProjectImporter struct {
+	ExternalName     string
+	Client           importer.Client[*gitlab.Client]
+	ObservedComposed resource.ObservedComposed
+	DesiredComposed  *resource.DesiredComposed
 }
 
 // RequiresExternalName determines if a gitlab project needs to be supplied with
-// an external-name.
-func (g *GitlabProjectImport) RequiresExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed) (bool, error) {
-	return true, nil
+// an external-name because it is not set.
+func (g *GitlabProjectImporter) RequiresExternalName() bool {
+	currentExternalName := internal.GetExternalNameFromObserved(g.ObservedComposed)
+	return currentExternalName == ""
 }
 
 // LoadExternalName searches gitlab projects for an external-name based on
 // observed composed.
-func (g *GitlabProjectImport) LoadExternalName(obs resource.ObservedComposed) error {
+func (g *GitlabProjectImporter) LoadExternalName() error {
+	client, err := g.Client.GetClient()
+	if err != nil {
+		return errors.Errorf("cannot get client: %w", err)
+	}
+
+	obsKind := g.DesiredComposed.Resource.GroupVersionKind().Kind
+	namespaceID, err := internal.GetNamespaceID(g.DesiredComposed, obsKind)
+	if err != nil {
+		return errors.Errorf("cannot get namespace from %s: %w", obsKind, err)
+	}
+
+	path, err := internal.GetPath(g.DesiredComposed)
+	if err != nil {
+		return errors.Errorf("cannot get path from %s: %w", obsKind, err)
+	}
+
+	projectID, err := GetProject(client, namespaceID, path)
+	if err != nil {
+		return errors.Errorf("cannot get external-name from %s: %w", obsKind, err)
+	}
+
+	g.ExternalName = strconv.Itoa(projectID)
 	return nil
+}
+
+// ResourceAlreadyExists determines if project already exists externally
+// based on synced condition of observed resource.
+func (g *GitlabProjectImporter) ResourceAlreadyExists() (string, bool) {
+	// TODO: custom url - maybe don't need url at all.
+	// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
+	const errorMessage = "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
+	const nameError = "name: [has already been taken]"
+	const pathError = "path: [has already been taken]"
+	const namespaceError = "project_namespace.name: [has already been taken]"
+
+	// check if error message matches
+	conditionSynced := g.ObservedComposed.Resource.GetCondition("Synced")
+	switch conditionSynced.Message {
+	case errorMessage:
+		return errorMessage, true
+	case nameError:
+		return nameError, true
+	case pathError:
+		return pathError, true
+	case namespaceError:
+		return namespaceError, true
+	default:
+		return conditionSynced.Message, false
+	}
+}
+
+// Get external-name from gitlab project importer.
+func (g *GitlabProjectImporter) GetExternalName() string {
+	return g.ExternalName
+}
+
+// Get observed composed from gitlab project importer.
+func (g *GitlabProjectImporter) GetObservedComposed() resource.ObservedComposed {
+	return g.ObservedComposed
+}
+
+// Get desired composed from gitlab project importer.
+func (g *GitlabProjectImporter) GetDesiredComposed() *resource.DesiredComposed {
+	return g.DesiredComposed
 }
 
 // GetProject returns the `projectID` for a given `namespaceID` and `path`.
