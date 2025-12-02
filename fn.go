@@ -122,6 +122,13 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 			f.log.Info("Failed to ensure external-name", "name", name, "err", err)
 		}
 
+		// Mark resource to have its external-name managed.
+		internal.AddAnnotationToDesired(des, "crossplane.io/managed-external-name", "true")
+
+		// TODO: Configure managementPolicies
+
+		f.log.Info("Managed Fields", "managedFields", des.Resource.GetManagedFields())
+
 		desResourcesWithUpdate[name] = des
 	}
 	return desResourcesWithUpdate
@@ -129,6 +136,7 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 
 func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed) error {
 	externalName := internal.GetExternalNameFromObserved(obs)
+	// Test if external-name already present on observed.
 	if externalName != "" {
 		f.log.Info("Copy external-name from observed to desired composed resource...")
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
@@ -137,6 +145,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		return nil
 	}
 
+	// If external-name not present try to import it using a fitting importer implementation.
 	obsGroup := obs.Resource.GetObjectKind().GroupVersionKind().Group
 	var resourceImporter importer.Importer
 	var handler handler.Handler
