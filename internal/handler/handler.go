@@ -9,7 +9,7 @@ import "github.com/crossplane/function-sdk-go/resource"
 //   - GetPath: Retrieving the resource path from a desired resource.
 //   - CheckResourceExists: Determining if the resource already exists based on observed conditions.
 //
-// Implementations of this interface (such as GitLab-specific handlers) provide provider-specific logic
+// Implementations of this interface (such as GitLab-specific handlers) provide provider-specific logic.
 type Handler interface {
 	GetNamespaceID(des *resource.DesiredComposed) (int, error)
 	GetPath(des *resource.DesiredComposed) (string, error)
