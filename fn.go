@@ -164,5 +164,5 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		return nil
 	}
 
-	return errors.Errorf("external-name could not be set because: %s", msg)
+	return errors.Errorf("external-name could not be set: %s", msg)
 }
