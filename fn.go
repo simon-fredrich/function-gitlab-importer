@@ -111,6 +111,7 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 
 	// iterate through observed resources and filter out gitlab related ones
 	for name, obs := range resources.GetObserved() {
+		f.log.Info("Processing resource", "name", name)
 		// ensure there is a matching desired resource we can update
 		des, ok := resources.GetDesired()[name]
 		if !ok {
@@ -126,8 +127,6 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 		internal.AddAnnotationToDesired(des, "crossplane.io/managed-external-name", "true")
 
 		// TODO: Configure managementPolicies
-
-		f.log.Info("Managed Fields", "managedFields", des.Resource.GetManagedFields())
 
 		desResourcesWithUpdate[name] = des
 	}
@@ -161,7 +160,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 	}
 	msg, value := handler.CheckResourceExists(obs)
 	if value {
-		f.log.Info("Resource already exists", "msg", msg)
+		f.log.Info("Resource already exists; importing external-name", "msg", msg)
 		externalName, err := resourceImporter.Import(des)
 		if err != nil {
 			return err
