@@ -27,10 +27,10 @@ func (g *GroupHandler) GetPath(des *resource.DesiredComposed) (string, error) {
 	return pathString, nil
 }
 
-func (g *GroupHandler) Exists(obs resource.ObservedComposed) bool {
+func (g *GroupHandler) CheckResourceExists(obs resource.ObservedComposed) (string, bool) {
 	const errorMessage = "has already been taken"
 
 	// check if error message matches
 	conditionSynced := obs.Resource.GetCondition("Synced")
-	return strings.Contains(conditionSynced.Message, errorMessage)
+	return conditionSynced.Message, strings.Contains(conditionSynced.Message, errorMessage)
 }

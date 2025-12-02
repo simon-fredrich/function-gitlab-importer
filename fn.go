@@ -152,9 +152,9 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 	default:
 		return errors.Errorf("group does not have an importer")
 	}
-
-	if handler.Exists(obs) {
-		f.log.Info("Resource already exists")
+	msg, value := handler.CheckResourceExists(obs)
+	if value {
+		f.log.Info("Resource already exists", "msg", msg)
 		externalName, err := resourceImporter.Import(des)
 		if err != nil {
 			return err
@@ -164,5 +164,5 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		return nil
 	}
 
-	return errors.Errorf("external-name could not be set")
+	return errors.Errorf("external-name could not be set because: %s", msg)
 }
