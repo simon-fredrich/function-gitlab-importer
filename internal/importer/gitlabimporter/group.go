@@ -11,10 +11,28 @@ import (
 	"github.com/crossplane/function-sdk-go/resource"
 )
 
+// GroupImporter implements the Importer interface for GitLab groups.
+// It uses the GitLab API client to locate an existing subgroup within a parent group
+// based on the desired resource specification, and sets its ID as the external-name
+// in the Crossplane composition.
+//
+// This type is intended for Crossplane functions that need to import existing GitLab groups
+// rather than creating new ones.
 type GroupImporter struct {
 	Client *gitlab.Client
 }
 
+// Import locates an existing GitLab group based on the desired resource specification
+// and sets its ID as the external-name in the Crossplane composition.
+//
+// It performs the following steps:
+//  1. Retrieves the parent group ID (namespaceID) and path from the desired resource.
+//  2. Uses the GitLab API client to find the subgroup within the parent group.
+//  3. Converts the group ID to a string and sets it as the external-name.
+//
+// Returns:
+//   - The external-name (group ID as a string) if successful.
+//   - An error if the resource cannot be imported or the group cannot be found.
 func (g *GroupImporter) Import(des *resource.DesiredComposed) (string, error) {
 	handler := &gitlabhandler.GroupHandler{}
 	namespaceID, err := handler.GetNamespaceID(des)
@@ -39,7 +57,12 @@ func (g *GroupImporter) Import(des *resource.DesiredComposed) (string, error) {
 	return externalName, nil
 }
 
-// GetGroup returns the `groupID` for a given `parentID` and `path`.
+// GetGroup returns the ID of a GitLab subgroup given its namespace ID and path.
+// It retrieves all subgroups under the specified parent group and searches for a match.
+//
+// Returns:
+//   - The subgroup ID if found.
+//   - An error if the subgroup cannot be found or the API call fails.
 func GetGroup(client *gitlab.Client, namespaceID int, path string) (int, error) {
 	// namespaceID is the ID of the parentgroup containing the desired subgroup
 	parentID := namespaceID

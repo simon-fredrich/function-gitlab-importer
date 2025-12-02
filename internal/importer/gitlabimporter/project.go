@@ -11,10 +11,28 @@ import (
 	"github.com/crossplane/function-sdk-go/resource"
 )
 
+// ProjectImporter implements the Importer interface for GitLab projects.
+// It uses the GitLab API client to locate an existing project within a namespace
+// based on the desired resource specification, and sets its ID as the external-name
+// in the Crossplane composition.
+//
+// This type is intended for Crossplane functions that need to import existing GitLab projects
+// rather than creating new ones.
 type ProjectImporter struct {
 	Client *gitlab.Client
 }
 
+// Import locates an existing GitLab project based on the desired resource specification
+// and sets its ID as the external-name in the Crossplane composition.
+//
+// It performs the following steps:
+//  1. Retrieves the namespace ID and path from the desired resource.
+//  2. Uses the GitLab API client to find the project within the namespace.
+//  3. Converts the project ID to a string and sets it as the external-name.
+//
+// Returns:
+//   - The external-name (project ID as a string) if successful.
+//   - An error if the resource cannot be imported or the project cannot be found.
 func (g *ProjectImporter) Import(des *resource.DesiredComposed) (string, error) {
 	handler := &gitlabhandler.ProjectHandler{}
 	namespaceID, err := handler.GetNamespaceID(des)
@@ -39,7 +57,12 @@ func (g *ProjectImporter) Import(des *resource.DesiredComposed) (string, error) 
 	return externalName, nil
 }
 
-// GetProject returns the `projectID` for a given `namespaceID` and `path`.
+// GetProject returns the ID of a GitLab project given its namespace ID and path.
+// It retrieves all projects under the specified namespace and searches for a match.
+//
+// Returns:
+//   - The project ID if found.
+//   - An error if the project cannot be found or the API call fails.
 func GetProject(client *gitlab.Client, namespaceID int, path string) (int, error) {
 	// namespaceID is the ID of the parentgroup containing the desired project
 	parentID := namespaceID
