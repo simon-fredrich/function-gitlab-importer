@@ -48,33 +48,6 @@ func (r Resources) GetDesired() map[resource.Name]*resource.DesiredComposed {
 	return r.desiredComposed
 }
 
-// GetNamespaceID returns the namespaceID of a desired composed resource of kind Project
-// as well as Group.
-func GetNamespaceID(des *resource.DesiredComposed, obsKind string) (int, error) {
-	var resourcePath string
-	switch obsKind {
-	case "Project":
-		resourcePath = "spec.forProvider.namespaceID"
-	case "Group":
-		resourcePath = "spec.forProvider.parentID"
-	}
-	namespaceID, err := des.Resource.GetInteger(resourcePath)
-	if err != nil {
-		return -1, fmt.Errorf("cannot get namespaceID from resource: %w", err)
-	}
-	return int(namespaceID), nil
-}
-
-// GetPath returns the path of a desired composed resource.
-func GetPath(des *resource.DesiredComposed) (string, error) {
-	resourcePath := "spec.forProvider.path"
-	pathString, err := des.Resource.GetString(resourcePath)
-	if err != nil {
-		return "", fmt.Errorf("cannot get path from resource: %w", err)
-	}
-	return pathString, nil
-}
-
 // GetExternalNameFromDesired returns the external-name from a desired composed resource.
 func GetExternalNameFromDesired(des *resource.DesiredComposed) string {
 	return des.Resource.GetAnnotations()["crossplane.io/external-name"]
