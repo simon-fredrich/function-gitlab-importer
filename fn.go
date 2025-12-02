@@ -86,7 +86,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// process all resources and return those that need update
-	desResourcesWithUpdate := f.processResources(resources, in, rsp)
+	desResourcesWithUpdate := f.processResources(resources)
 
 	// Commit all changes once
 	if err := response.SetDesiredComposedResources(rsp, desResourcesWithUpdate); err != nil {
@@ -105,7 +105,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 }
 
 // processRecources processes gitlab related resources.
-func (f *Function) processResources(resources internal.Resources, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse) map[resource.Name]*resource.DesiredComposed {
+func (f *Function) processResources(resources internal.Resources) map[resource.Name]*resource.DesiredComposed {
 	// define map to hold desired resources that need an update
 	desResourcesWithUpdate := make(map[resource.Name]*resource.DesiredComposed)
 
@@ -132,8 +132,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 	externalName := internal.GetExternalNameFromObserved(obs)
 	if externalName != "" {
 		f.log.Info("Copy external-name from observed to desired composed resource...")
-		err := internal.SetExternalNameOnDesired(des, externalName)
-		if err != nil {
+		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
 		return nil
@@ -160,7 +159,9 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 			return err
 		}
 		f.log.Info("Resource successfully imported!", "external-name", externalName)
-		internal.SetExternalNameOnDesired(des, externalName)
+		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
+			return err
+		}
 		return nil
 	}
 
