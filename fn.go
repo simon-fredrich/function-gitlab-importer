@@ -123,7 +123,6 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 		}
 
 		desResourcesWithUpdate[name] = des
-
 	}
 	return desResourcesWithUpdate
 }
