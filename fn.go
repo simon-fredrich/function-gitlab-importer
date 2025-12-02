@@ -3,10 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	"github.com/simon-fredrich/function-gitlab-importer/internal"
+	"github.com/simon-fredrich/function-gitlab-importer/internal/gitlabclient"
+	"github.com/simon-fredrich/function-gitlab-importer/internal/handler"
+	"github.com/simon-fredrich/function-gitlab-importer/internal/handler/gitlabhandler"
+	"github.com/simon-fredrich/function-gitlab-importer/internal/importer"
+	"github.com/simon-fredrich/function-gitlab-importer/internal/importer/gitlabimporter"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
@@ -20,6 +25,9 @@ import (
 type Function struct {
 	fnv1.UnimplementedFunctionRunnerServiceServer
 
+	Input  *v1beta1.Input
+	Client *gitlab.Client
+
 	log logging.Logger
 }
 
@@ -28,6 +36,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	f.log.Info("Running function", "tag", req.GetMeta().GetTag())
 	rsp := response.To(req, response.DefaultTTL)
 	in := &v1beta1.Input{}
+	f.Input = in
 	if err := request.GetInput(req, in); err != nil {
 		// You can set a custom status condition on the claim. This allows you to
 		// communicate with the user. See the link below for status condition
@@ -70,6 +79,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
+	// supply function with gitlab client
+	f.Client, err = gitlabclient.LoadClient(f.Input)
+	if err != nil {
+		response.Fatal(rsp, fmt.Errorf("cannot supply function with gitlab client: %w", err))
+	}
+
 	// process all resources and return those that need update
 	desResourcesWithUpdate := f.processResources(resources, in, rsp)
 
@@ -103,198 +118,51 @@ func (f *Function) processResources(resources internal.Resources, in *v1beta1.In
 			continue
 		}
 
-		obsGroup := obs.Resource.GroupVersionKind().Group
-		obsKind := obs.Resource.GroupVersionKind().Kind
-		if obsGroup == "projects.gitlab.crossplane.io" && obsKind == "Project" {
-			if f.handleProjectResource(name, obs, des, in, rsp, obsKind) {
-				desResourcesWithUpdate[name] = des
-			}
-		} else if obsGroup == "groups.gitlab.crossplane.io" && obsKind == "Group" {
-			f.log.Info("found group")
-			if f.handleGroupResource(name, obs, des, in, rsp, obsKind) {
-				desResourcesWithUpdate[name] = des
-			}
+		if err := f.ensureExternalName(obs, des); err != nil {
+			f.log.Info("Failed to ensure external-name", "name", name, "err", err)
 		}
+
+		desResourcesWithUpdate[name] = des
+
 	}
 	return desResourcesWithUpdate
 }
 
-// handleProjectResources handles gitlab project resources to keep their external-name up-to-date.
-func (f *Function) handleProjectResource(name resource.Name, obs resource.ObservedComposed, des *resource.DesiredComposed, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse, obsKind string) bool {
-	f.log.Info("processing resource...", "kind", obsKind, "name", name)
-	// check if external-name is already set in observed resource
-	currentExternalName := internal.GetExternalNameFromObserved(obs)
-	desiredExternalName := internal.GetExternalNameFromDesired(des)
-	switch {
-	case currentExternalName != "":
-		f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "external-name", currentExternalName)
-		err := internal.SetExternalNameOnDesired(des, currentExternalName)
+func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed) error {
+	externalName := internal.GetExternalNameFromObserved(obs)
+	if externalName != "" {
+		f.log.Info("Copy external-name from observed to desired composed resource...")
+		err := internal.SetExternalNameOnDesired(des, externalName)
 		if err != nil {
-			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
-			return false
+			return err
 		}
-	case desiredExternalName != "":
-		err := internal.SetExternalNameOnDesired(des, desiredExternalName)
-		if err != nil {
-			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
-			return false
-		}
+		return nil
+	}
+
+	obsGroup := obs.Resource.GetObjectKind().GroupVersionKind().Group
+	var resourceImporter importer.Importer
+	var handler handler.Handler
+	switch obsGroup {
+	case "projects.gitlab.crossplane.io":
+		handler = &gitlabhandler.ProjectHandler{}
+		resourceImporter = &gitlabimporter.ProjectImporter{Client: f.Client}
+	case "groups.gitlab.crossplane.io":
+		handler = &gitlabhandler.GroupHandler{}
+		resourceImporter = &gitlabimporter.GroupImporter{Client: f.Client}
 	default:
-		if f.ifProjectHasBeenTaken(obs) {
-			f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
-			projectID, err := f.fetchExternalNameFromGitlab(des, in, rsp, obsKind)
-			if err != nil {
-				f.log.Info("external-name could not be fetched from gitlab", "err", err)
-				return false
-			}
-			err = internal.SetExternalNameOnDesired(des, strconv.Itoa(projectID))
-			if err != nil {
-				response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
-				return false
-			}
-			f.log.Info("external-name acquired on gitlab and written to desired resource", "name", name, "external-name", projectID)
-		} else {
-			f.log.Info(fmt.Sprintf("%v in transition...", obsKind))
-		}
+		return errors.Errorf("group does not have an importer")
 	}
-	return true
-}
 
-// handleGroupResource handles gitlab group resources to keep their external-name up-to-date.
-func (f *Function) handleGroupResource(name resource.Name, obs resource.ObservedComposed, des *resource.DesiredComposed, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse, obsKind string) bool {
-	f.log.Info("processing resource...", "kind", obsKind, "name", name)
-	// check if external-name is already set in observed resource
-	currentExternalName := internal.GetExternalNameFromObserved(obs)
-	desiredExternalName := internal.GetExternalNameFromDesired(des)
-	switch {
-	case currentExternalName != "":
-		f.log.Info("external-name already set in observed; copy external-name to desired resource", "name", name, "external-name", currentExternalName)
-		err := internal.SetExternalNameOnDesired(des, currentExternalName)
+	if handler.Exists(obs) {
+		f.log.Info("Resource already exists")
+		externalName, err := resourceImporter.Import(des)
 		if err != nil {
-			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
-			return false
+			return err
 		}
-	case desiredExternalName != "":
-		err := internal.SetExternalNameOnDesired(des, desiredExternalName)
-		if err != nil {
-			response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
-			return false
-		}
-	default:
-		if f.ifGroupHasBeenTaken(obs) {
-			f.log.Info("could not create resource on gitlab, because it already exists; fetching external-name from gitlab")
-			groupID, err := f.fetchExternalNameFromGitlab(des, in, rsp, obsKind)
-			if err != nil {
-				f.log.Info("external-name could not be fetched from gitlab", "err", err)
-				return false
-			}
-			err = internal.SetExternalNameOnDesired(des, strconv.Itoa(groupID))
-			if err != nil {
-				response.Fatal(rsp, errors.Errorf("cannot set external-name: %w", err))
-				return false
-			}
-			f.log.Info("external-name acquired on gitlab and written to desired resource", "name", name, "external-name", groupID)
-		} else {
-			f.log.Info(fmt.Sprintf("%v in transition...", obsKind))
-		}
-	}
-	return true
-}
-
-// ifGroupHasBeenTaken returns true if the gitlab group could not be created.
-func (f *Function) ifProjectHasBeenTaken(obs resource.ObservedComposed) bool {
-	// TODO: custom url - maybe don't need url at all.
-	// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
-	const errorMessage = "create failed: cannot create Gitlab project: POST https://gitlab.com/api/v4/projects: 400 {message: {name: [has already been taken]}, {path: [has already been taken]}, {project_namespace.name: [has already been taken]}}"
-	const nameError = "name: [has already been taken]"
-	const pathError = "path: [has already been taken]"
-	const namespaceError = "project_namespace.name: [has already been taken]"
-
-	// check if error message matches
-	f.log.Info("check condition 'Synced'")
-	conditionSynced := obs.Resource.GetCondition("Synced")
-	switch conditionSynced.Message {
-	case errorMessage:
-		f.log.Info(errorMessage)
-		return true
-	case nameError:
-		f.log.Info(nameError)
-		return true
-	case pathError:
-		f.log.Info(pathError)
-		return true
-	case namespaceError:
-		f.log.Info(namespaceError)
-		return true
-	default:
-		return false
-	}
-}
-
-// ifGroupHasBeenTaken returns true if the gitlab group could not be created.
-func (f *Function) ifGroupHasBeenTaken(obs resource.ObservedComposed) bool {
-	// TODO: custom url - maybe don't need url at all.
-	// TODO: regex: what parts of errorMessage are important to determine if the project/group needs to be imported from gitlab.
-	const errorMessage = `cannot create Gitlab Group: POST https://gitlab.com/api/v4/groups: 400 {message: Failed to save group {:name=>["has already been taken"], :path=>["has already been taken"]}}`
-	const nameError = `name=>["has already been taken"]`
-	const pathError = `path=>["has already been taken"]`
-
-	// check if error message matches
-	f.log.Info("check condition 'Synced'")
-	conditionSynced := obs.Resource.GetCondition("Synced")
-	switch conditionSynced.Message {
-	case errorMessage:
-		f.log.Info(errorMessage)
-		return true
-	case nameError:
-		f.log.Info(nameError)
-		return true
-	case pathError:
-		f.log.Info(pathError)
-		return true
-	default:
-		f.log.Info(conditionSynced.Message)
-		return false
-	}
-}
-
-// TODO: refactor into goup and project specific functions.
-// fetchExternalNameFromGitlab finds a gitlab project or group based on clientGitlab, namespace and path.
-func (f *Function) fetchExternalNameFromGitlab(des *resource.DesiredComposed, in *v1beta1.Input, rsp *fnv1.RunFunctionResponse, obsKind string) (int, error) {
-	clientGitlab, err := internal.LoadClientGitlab(in)
-	if err != nil {
-		f.log.Debug("cannot init gitlab-client", "err", err)
-		f.log.Info("cannot init gitlab-client", "err", err)
-		response.Warning(rsp, errors.Wrap(err, "gitlab lookup failed")).TargetCompositeAndClaim()
-		return -1, errors.Errorf("cannot init gitlab-client: %v", err)
+		f.log.Info("Resource successfully imported!", "external-name", externalName)
+		internal.SetExternalNameOnDesired(des, externalName)
+		return nil
 	}
 
-	namespace, err := internal.GetNamespaceID(des, obsKind)
-	if err != nil {
-		return -1, errors.Errorf(fmt.Sprintf("cannot get namespace from %v: %v", obsKind, err))
-	}
-
-	path, err := internal.GetPath(des)
-	if err != nil {
-		return -1, errors.Errorf("cannot get path from %v: %v", obsKind, err)
-	}
-
-	switch obsKind {
-	case "Project":
-		externalName, err := internal.GetProject(clientGitlab, namespace, path)
-		if err != nil {
-			return -1, errors.Errorf("cannot get external-name from %v: %v", obsKind, err)
-		}
-		f.log.Info(fmt.Sprintf("Found %v on gitlab!", obsKind), "namespace", namespace, "path", path, "external-name", externalName)
-		return externalName, nil
-	case "Group":
-		externalName, err := internal.GetGroup(clientGitlab, namespace, path)
-		if err != nil {
-			return -1, errors.Errorf("cannot get external-name from %v: %v", obsKind, err)
-		}
-		f.log.Info(fmt.Sprintf("Found %v on gitlab!", obsKind), "namespace", namespace, "path", path, "external-name", externalName)
-		return externalName, nil
-	default:
-		return -1, errors.Errorf("cannot handle resource of kind %v", obsKind)
-	}
+	return errors.Errorf("external-name could not be set")
 }
