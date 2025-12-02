@@ -1,11 +1,11 @@
-// Package client provides utilities for creating and configuring a GitLab API client.
+// Package gitlabclient provides utilities for creating and configuring a GitLab API client.
 // It retrieves the GitLab personal access token from the environment variable `GITLAB_API_KEY`
 // and determines the GitLab BaseURL from either the provided input or environment variables.
 // If no BaseURL is specified, it defaults to `https://gitlab.com/`.
 //
 // Typical usage:
 //
-//	client, err := client.LoadClient(input)
+//	client, err := gitlabclient.LoadClient(input)
 //	if err != nil {
 //	    // handle error
 //	}
