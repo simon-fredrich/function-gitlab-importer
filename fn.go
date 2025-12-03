@@ -121,6 +121,7 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 
 		if err := f.ensureExternalName(obs, des); err != nil {
 			f.log.Info("Failed to ensure external-name", "name", name, "err", err)
+			continue
 		}
 
 		// Mark resource to have its external-name managed.
