@@ -34,3 +34,6 @@ spec:
     - step: check-template
       functionRef:
         name: function-gitlab-importer
+    - step: ensure-readiness
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
