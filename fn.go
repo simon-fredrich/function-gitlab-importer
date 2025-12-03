@@ -157,7 +157,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		handler = &gitlabhandler.GroupHandler{}
 		resourceImporter = &gitlabimporter.GroupImporter{Client: f.Client}
 	default:
-		return errors.Errorf("group does not have an importer")
+		return errors.Errorf("group does not have an importer: %s", obsGroup)
 	}
 	msg, value := handler.CheckResourceExists(obs)
 	if value {
