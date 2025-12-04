@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"strconv"
 
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
@@ -58,13 +59,13 @@ func GetExternalNameFromObserved(obs resource.ObservedComposed) string {
 	return obs.Resource.GetAnnotations()["crossplane.io/external-name"]
 }
 
-// AddAnnotationToDesired adds a custom annotation to a desired composed resource.
+// AddAnnotationOnDesired adds a custom annotation to a desired composed resource.
 // If the resource has no existing annotations, a new map is created.
 // The annotation is added using the provided key and value.
 //
 // This helper is useful in Crossplane functions for dynamically adding metadata
 // to desired resources during function execution.
-func AddAnnotationToDesired(des *resource.DesiredComposed, key string, value string) {
+func AddAnnotationOnDesired(des *resource.DesiredComposed, key string, value string) {
 	annotations := des.Resource.GetAnnotations()
 
 	if annotations == nil {
@@ -81,6 +82,12 @@ func SetExternalNameOnDesired(des *resource.DesiredComposed, externalName string
 		return fmt.Errorf("external-name is empty")
 	}
 
-	AddAnnotationToDesired(des, "crossplane.io/external-name", externalName)
+	AddAnnotationOnDesired(des, "crossplane.io/external-name", externalName)
 	return nil
+}
+
+// SetBoolAnnotation appends a boolean value as "true"/"false" to annotations.
+func SetBoolAnnotation(des *resource.DesiredComposed, key string, value bool) {
+	boolAsString := strconv.FormatBool(value)
+	AddAnnotationOnDesired(des, key, boolAsString)
 }
