@@ -156,7 +156,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 	msg, value := handler.CheckResourceExists(obs)
 	if value {
 		f.log.Info("Resource already exists; importing external-name", "msg", msg)
-		if f.Client != nil {
+		if f.Client == nil {
 			// supply function with gitlab client
 			client, err := gitlabclient.LoadClient(f.Input)
 			if err != nil {
