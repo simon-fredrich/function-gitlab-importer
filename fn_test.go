@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/simon-fredrich/function-gitlab-importer/internal/testutils"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -17,7 +16,7 @@ import (
 	"github.com/crossplane/function-sdk-go/response"
 )
 
-var externalNameExisting = loadDataFromFile("testdata/external-name-existing.json")
+var externalNameExisting = testutils.LoadDataFromFile("testdata/external-name-existing.json")
 
 // TODO: ResponseIsReturnedWithNoChange (wrong message does not change the desired resource)
 // TODO: ResponseIsReturnedWithChange(right message does change the desired resource with an external-name annotation)
@@ -81,13 +80,4 @@ func TestRunFunction(t *testing.T) {
 			}
 		})
 	}
-}
-
-// loadDataFromFile imports a file for processing in tests.
-func loadDataFromFile(filename string) string {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return string(data)
 }
