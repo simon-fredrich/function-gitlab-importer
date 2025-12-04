@@ -57,6 +57,20 @@ func (g *GroupImporter) Import(des *resource.DesiredComposed) (string, error) {
 	return externalName, nil
 }
 
+// PassClient assigns a GitLab client to the GroupImporter.
+//
+// It expects the provided client to be of type *gitlab.Client. If the type
+// assertion fails, an error is returned indicating the expected and actual
+// types.
+func (g *GroupImporter) PassClient(client any) error {
+	c, ok := client.(*gitlab.Client)
+	if !ok {
+		return errors.Errorf("tried to pass client with wrong type: expected *gitlab.Client, got %T", c)
+	}
+	g.Client = c
+	return nil
+}
+
 // GetGroup returns the ID of a GitLab subgroup given its namespace ID and path.
 // It retrieves all subgroups under the specified parent group and searches for a match.
 //
