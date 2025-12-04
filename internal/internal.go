@@ -91,3 +91,12 @@ func SetBoolAnnotation(des *resource.DesiredComposed, key string, value bool) {
 	boolAsString := strconv.FormatBool(value)
 	AddAnnotationOnDesired(des, key, boolAsString)
 }
+
+func SetManagedValues(des *resource.DesiredComposed) {
+	// Mark resource to have its external-name managed.
+	SetBoolAnnotation(des, "crossplane.io/managed-external-name", true)
+
+	// Configure managementPolicies
+	observeOnly := []string{"Observe"}
+	des.Resource.SetValue("spec.managementPolicies", observeOnly)
+}
