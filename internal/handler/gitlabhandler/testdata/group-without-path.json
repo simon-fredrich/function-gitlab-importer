@@ -1,0 +1,8 @@
+{
+    "apiVersion": "groups.gitlab.crossplane.io/v1alpha1",
+    "kind": "Group",
+    "spec": {
+        "forProvider": {
+        }
+    }
+}
