@@ -33,7 +33,7 @@ type ProjectImporter struct {
 // Returns:
 //   - The external-name (project ID as a string) if successful.
 //   - An error if the resource cannot be imported or the project cannot be found.
-func (g *ProjectImporter) Import(des *resource.DesiredComposed) (string, error) {
+func (p *ProjectImporter) Import(des *resource.DesiredComposed) (string, error) {
 	handler := &gitlabhandler.ProjectHandler{}
 	namespaceID, err := handler.GetNamespaceID(des)
 	if err != nil {
@@ -43,7 +43,7 @@ func (g *ProjectImporter) Import(des *resource.DesiredComposed) (string, error) 
 	if err != nil {
 		return "", errors.Errorf("cannot import resource: %w", err)
 	}
-	projectID, err := GetProject(g.Client, namespaceID, path)
+	projectID, err := GetProject(p.Client, namespaceID, path)
 	if err != nil {
 		return "", errors.Errorf("cannot import resource: %w", err)
 	}
