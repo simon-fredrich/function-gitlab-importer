@@ -126,13 +126,6 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 			continue
 		}
 
-		// Mark resource to have its external-name managed.
-		internal.AddAnnotationToDesired(des, "crossplane.io/managed-external-name", "true")
-
-		// Configure managementPolicies
-		observeOnly := []string{"Observe"}
-		des.Resource.SetValue("spec.managementPolicies", observeOnly)
-
 		desResourcesWithUpdate[name] = des
 	}
 	return desResourcesWithUpdate
@@ -146,6 +139,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
+		internal.SetManagedValues(des)
 		return nil
 	}
 
@@ -164,8 +158,8 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		f.log.Debug("group does not have an importer", "observed group", obsGroup)
 		return nil
 	}
-	msg, value := handler.CheckResourceExists(obs)
-	if value {
+	msg, exists := handler.CheckResourceExists(obs)
+	if exists {
 		f.log.Info("Resource already exists; importing external-name", "msg", msg)
 		if f.Client == nil {
 			// supply function with gitlab client
@@ -188,6 +182,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
+		internal.SetManagedValues(des)
 		return nil
 	}
 
