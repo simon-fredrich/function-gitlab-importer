@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	"github.com/simon-fredrich/function-gitlab-importer/internal"
@@ -106,6 +107,13 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 	// iterate through observed resources and filter out gitlab related ones
 	for name, obs := range resources.GetObserved() {
 		f.log.Info("Processing resource", "name", name)
+
+		obsGroup := obs.Resource.GetObjectKind().GroupVersionKind().Group
+		// only process resources related to gitlab
+		if !strings.Contains(obsGroup, "gitlab") {
+			continue
+		}
+
 		// ensure there is a matching desired resource we can update
 		des, ok := resources.GetDesired()[name]
 		if !ok {
@@ -122,6 +130,7 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 		internal.AddAnnotationToDesired(des, "crossplane.io/managed-external-name", "true")
 
 		// TODO: Configure managementPolicies
+		des.Resource.SetString("spec.managementPolicies", `["Observe"]`)
 
 		desResourcesWithUpdate[name] = des
 	}
