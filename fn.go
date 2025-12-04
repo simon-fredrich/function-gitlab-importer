@@ -129,8 +129,9 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 		// Mark resource to have its external-name managed.
 		internal.AddAnnotationToDesired(des, "crossplane.io/managed-external-name", "true")
 
-		// TODO: Configure managementPolicies
-		des.Resource.SetString("spec.managementPolicies", `["Observe"]`)
+		// Configure managementPolicies
+		observeOnly := []string{"Observe"}
+		des.Resource.SetValue("spec.managementPolicies", observeOnly)
 
 		desResourcesWithUpdate[name] = des
 	}
