@@ -79,12 +79,6 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	// supply function with gitlab client
-	f.Client, err = gitlabclient.LoadClient(f.Input)
-	if err != nil {
-		response.Fatal(rsp, fmt.Errorf("cannot supply function with gitlab client: %w", err))
-	}
-
 	// process all resources and return those that need update
 	desResourcesWithUpdate := f.processResources(resources)
 
@@ -152,16 +146,26 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 	switch obsGroup {
 	case "projects.gitlab.crossplane.io":
 		handler = &gitlabhandler.ProjectHandler{}
-		resourceImporter = &gitlabimporter.ProjectImporter{Client: f.Client}
+		resourceImporter = &gitlabimporter.ProjectImporter{}
 	case "groups.gitlab.crossplane.io":
 		handler = &gitlabhandler.GroupHandler{}
-		resourceImporter = &gitlabimporter.GroupImporter{Client: f.Client}
+		resourceImporter = &gitlabimporter.GroupImporter{}
 	default:
-		return errors.Errorf("group does not have an importer: %s", obsGroup)
+		return nil
 	}
 	msg, value := handler.CheckResourceExists(obs)
 	if value {
 		f.log.Info("Resource already exists; importing external-name", "msg", msg)
+		if f.Client == nil {
+			// supply function with gitlab client
+			client, err := gitlabclient.LoadClient(f.Input)
+			if err != nil {
+				f.log.Debug("cannot supply function with gitlab client", "err", err)
+			}
+			f.Client = client
+		}
+		// supply importer with client
+		resourceImporter.PassClient(f.Client)
 		externalName, err := resourceImporter.Import(des)
 		if err != nil {
 			return err
