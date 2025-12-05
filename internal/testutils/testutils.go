@@ -1,9 +1,10 @@
 package testutils
 
 import (
-	"embed"
-	"io/fs"
+	"os"
+	"strings"
 
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -12,11 +13,18 @@ import (
 )
 
 // LoadDataFromFile imports a file for processing in tests.
+//
+//nolint:gosec // using this function just for testing purposes.
 func LoadDataFromFile(filename string) ([]byte, error) {
-	var testdataFS embed.FS
-	data, err := fs.ReadFile(testdataFS, "./testdata/"+filename)
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
+		return nil, errors.Errorf("filename contains invalid characters, could be a data breach")
+	}
+
+	// Define base directory for loading files
+	baseDir := "testdata/"
+	data, err := os.ReadFile(baseDir + filename)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, errors.Errorf("could not load data from file: %w", err)
 	}
 	return data, nil
 }
