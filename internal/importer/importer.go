@@ -17,4 +17,5 @@ import (
 type Importer interface {
 	Import(des *resource.DesiredComposed) (string, error)
 	PassClient(client any) error
+	GetFullPath() (string, error)
 }
