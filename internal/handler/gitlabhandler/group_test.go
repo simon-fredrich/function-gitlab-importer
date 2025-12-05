@@ -21,14 +21,17 @@ func TestGetPath(t *testing.T) {
 		err        error
 	}
 
-	desWithPath, err := testutils.LoadDesiredComposedFromFile("group-with-path.json")
+	var filename string
+	filename = "group-with-path.json"
+	desWithPath, err := testutils.LoadDesiredComposedFromFile(filename)
 	if err != nil {
-		t.Fatalf("Failed to load test data: %v", err)
+		t.Fatalf("Failed to load test data %s: %v", filename, err)
 	}
 
-	desWithoutPath, err := testutils.LoadDesiredComposedFromFile("group-without-path.json")
+	filename = "group-without-path.json"
+	desWithoutPath, err := testutils.LoadDesiredComposedFromFile(filename)
 	if err != nil {
-		t.Fatalf("Failed to load test data: %v", err)
+		t.Fatalf("Failed to load test data %s: %v", filename, err)
 	}
 
 	cases := map[string]struct {

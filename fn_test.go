@@ -17,10 +17,10 @@ import (
 )
 
 func TestRunFunction(t *testing.T) {
-	filepath := "external-name-existing.json"
-	externalNameExistingData, err := testutils.LoadDataFromFile(filepath)
+	filename := "external-name-existing.json"
+	externalNameExistingData, err := testutils.LoadDataFromFile(filename)
 	if err != nil {
-		t.Errorf("cannot load data from file %s: %s", filepath, err.Error())
+		t.Errorf("cannot load data from file %s: %s", filename, err.Error())
 	}
 	externalNameExisting := string(externalNameExistingData)
 
