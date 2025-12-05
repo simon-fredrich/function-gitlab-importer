@@ -76,7 +76,7 @@ func (g *GroupImporter) PassClient(client any) error {
 func (g *GroupImporter) GetFullPath() (string, error) {
 	if g.groupID != nil {
 		if g.Client != nil {
-			group, rsp, err := g.Client.Groups.GetGroup(g.groupID, &gitlab.GetGroupOptions{})
+			group, rsp, err := g.Client.Groups.GetGroup(*g.groupID, &gitlab.GetGroupOptions{})
 			if err != nil {
 				return "", errors.Errorf("cannot get group, rsp: %v, err: %v", rsp, err)
 			}
