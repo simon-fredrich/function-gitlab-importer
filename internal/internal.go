@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
@@ -92,11 +93,19 @@ func SetBoolAnnotation(des *resource.DesiredComposed, key string, value bool) {
 	AddAnnotationOnDesired(des, key, boolAsString)
 }
 
-func SetManagedValues(des *resource.DesiredComposed) {
+// SetManagedValues edits the desired composite resource to display that it
+// has been imported and therefore is being managed and sets managementPolicies
+// to only observe external resources.
+func SetManagedValues(des *resource.DesiredComposed) error {
 	// Mark resource to have its external-name managed.
 	SetBoolAnnotation(des, "crossplane.io/managed-external-name", true)
 
 	// Configure managementPolicies
 	observeOnly := []string{"Observe"}
-	des.Resource.SetValue("spec.managementPolicies", observeOnly)
+	err := des.Resource.SetValue("spec.managementPolicies", observeOnly)
+	if err != nil {
+		return errors.Errorf("cannot set managed values on resource: %w", err)
+	}
+
+	return nil
 }
