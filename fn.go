@@ -31,7 +31,7 @@ type Function struct {
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
-	f.log.Info("Running function", "tag", req.GetMeta().GetTag())
+	f.log.Debug("Running function", "tag", req.GetMeta().GetTag())
 	rsp := response.To(req, response.DefaultTTL)
 	in := &v1beta1.Input{}
 	f.Input = in
@@ -58,7 +58,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	// get all resources from the request
 	resources, err := internal.GetResources(req)
 	if err != nil {
-		f.log.Info("Failed to extract observed and desired composed resources.",
+		f.log.Debug("Failed to extract observed and desired composed resources.",
 			"error", err,
 		)
 		response.Fatal(rsp, fmt.Errorf("cannot extract observed and desired composed resources: %w", err))
@@ -67,13 +67,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	// end function if no observed resource found
 	if len(resources.GetObserved()) == 0 {
-		f.log.Info("No observed resources found")
+		f.log.Debug("No observed resources found")
 		return rsp, nil
 	}
 
 	// end function if no desired resource found
 	if len(resources.GetDesired()) == 0 {
-		f.log.Info("No desired resources found")
+		f.log.Debug("No desired resources found")
 		return rsp, nil
 	}
 
@@ -82,7 +82,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	// Commit all changes once
 	if err := response.SetDesiredComposedResources(rsp, desResourcesWithUpdate); err != nil {
-		f.log.Info("Failed to set desired composed resources", "err", err)
+		f.log.Debug("Failed to set desired composed resources", "err", err)
 		response.Fatal(rsp, fmt.Errorf("cannot set desired composed resources: %w", err))
 	}
 
@@ -103,7 +103,7 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 
 	// iterate through observed resources and filter out gitlab related ones
 	for name, obs := range resources.GetObserved() {
-		f.log.Info("Processing resource", "name", name)
+		f.log.Debug("Processing resource", "name", name)
 
 		// only process relevant resources
 		obsGVK := obs.Resource.GetObjectKind().GroupVersionKind()
@@ -114,12 +114,12 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 		// ensure there is a matching desired resource we can update
 		des, ok := resources.GetDesired()[name]
 		if !ok {
-			f.log.Info("no corresponding desired resource found; skipping", "name", name)
+			f.log.Debug("no corresponding desired resource found; skipping", "name", name)
 			continue
 		}
 
 		if err := f.ensureExternalName(obs, des, obsGVK); err != nil {
-			f.log.Info("Failed to ensure external-name", "name", name, "err", err)
+			f.log.Debug("Failed to ensure external-name", "name", name, "err", err)
 			continue
 		}
 
@@ -135,9 +135,8 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 	if err != nil {
 		f.log.Debug("cannot get annotation", "err", err)
 	}
-	f.log.Info("ensureExternalName", "externalName", externalName, "managed", managed)
 	if externalName != "" && managed {
-		f.log.Info("Copy external-name from observed to desired composed resource...")
+		f.log.Debug("Copy external-name from observed to desired composed resource...")
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
@@ -156,7 +155,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 
 	msg, exists := impl.Handler.CheckResourceExists(obs)
 	if exists {
-		f.log.Info("Resource already exists; importing external-name", "msg", msg)
+		f.log.Debug("Resource already exists; importing external-name", "msg", msg)
 		if f.Client == nil {
 			// supply function with gitlab client
 			client, err := gitlabclient.LoadClient(f.Input)
@@ -175,7 +174,12 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		if err != nil {
 			return err
 		}
-		f.log.Info("Resource successfully imported!", "external-name", externalName)
+
+		desPath, err := impl.Handler.GetPath(des)
+		if err != nil {
+			return err
+		}
+		f.log.Info("Resource successfully imported!", "external-name", externalName, "path", desPath)
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
