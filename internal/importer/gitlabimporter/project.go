@@ -73,6 +73,11 @@ func (p *ProjectImporter) PassClient(client any) error {
 	return nil
 }
 
+// GetFullPath returns the full path of the external project resource.
+//
+// It expects the following values to be available:
+//   - ProjectImporter.projectID: Needs this value to search project on gitlab.
+//   - ProjectImporter.Client: Needs the client to interact with the gitlab-API.
 func (p *ProjectImporter) GetFullPath() (string, error) {
 	if p.projectID != nil {
 		if p.Client != nil {

@@ -73,6 +73,11 @@ func (g *GroupImporter) PassClient(client any) error {
 	return nil
 }
 
+// GetFullPath returns the full path of the external group resource.
+//
+// It expects the following values to be available:
+//   - GroupImporter.groupID: Needs this value to search group on gitlab.
+//   - GroupImporter.Client: Needs the client to interact with the gitlab-API.
 func (g *GroupImporter) GetFullPath() (string, error) {
 	if g.groupID != nil {
 		if g.Client != nil {
