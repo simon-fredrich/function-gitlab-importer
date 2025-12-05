@@ -128,10 +128,7 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 	return desResourcesWithUpdate
 }
 
-func (f *Function) ensureExternalName(
-	obs resource.ObservedComposed,
-	des *resource.DesiredComposed,
-	obsGKV schema.GroupVersionKind) error {
+func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed, obsGKV schema.GroupVersionKind) error {
 	externalName := internal.GetExternalNameFromObserved(obs)
 	// Test if external-name already present on observed.
 	if externalName != "" {
@@ -139,7 +136,10 @@ func (f *Function) ensureExternalName(
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
-		internal.SetManagedValues(des)
+		err := internal.SetManagedValues(des)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -174,7 +174,11 @@ func (f *Function) ensureExternalName(
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
-		internal.SetManagedValues(des)
+		err = internal.SetManagedValues(des)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	}
 
