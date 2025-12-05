@@ -129,8 +129,8 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 }
 
 func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed, obsGKV schema.GroupVersionKind) error {
+	// Test if external-name already present on observed and if resource need management.
 	externalName := internal.GetExternalNameFromObserved(obs)
-	// Test if external-name already present on observed.
 	managed, err := internal.GetBoolAnnotation(obs, "crossplane.io/managed-external-name")
 	if err != nil {
 		f.log.Debug("cannot get annotation", "err", err)
