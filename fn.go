@@ -131,7 +131,11 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed, obsGKV schema.GroupVersionKind) error {
 	externalName := internal.GetExternalNameFromObserved(obs)
 	// Test if external-name already present on observed.
-	if externalName != "" {
+	managed, err := internal.GetBoolAnnotation(des, "crossplane.io/managed-external-name")
+	if err != nil {
+		return err
+	}
+	if externalName != "" && managed {
 		f.log.Info("Copy external-name from observed to desired composed resource...")
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err

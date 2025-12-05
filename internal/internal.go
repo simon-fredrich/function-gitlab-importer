@@ -93,6 +93,29 @@ func SetBoolAnnotation(des *resource.DesiredComposed, key string, value bool) {
 	AddAnnotationOnDesired(des, key, boolAsString)
 }
 
+// GetBoolAnnotation retrieves a boolean value from annotations.
+// It expects the annotation values which are supported by strconv.ParseBool accepts.
+// Returns (value, true) if the annotation exists and is valid, otherwise (false, false).
+func GetBoolAnnotation(des *resource.DesiredComposed, key string) (bool, error) {
+	annotations := des.Resource.GetAnnotations()
+	if annotations == nil {
+		return false, errors.New("annotations == nil")
+	}
+
+	rawValue, ok := annotations[key]
+	if !ok {
+		return false, errors.Errorf("key \"%s\" not valid", key)
+	}
+
+	parsedValue, err := strconv.ParseBool(rawValue)
+	if err != nil {
+		// Invalid value (not "true"/"false")
+		return false, errors.Errorf("value \"%v\" could not be parsed: %w", rawValue, err)
+	}
+
+	return parsedValue, nil
+}
+
 // SetManagedValues edits the desired composite resource to display that it
 // has been imported and therefore is being managed and sets managementPolicies
 // to only observe external resources.
