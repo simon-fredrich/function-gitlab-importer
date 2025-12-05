@@ -1,28 +1,30 @@
 package testutils
 
 import (
-	"log"
-	"os"
+	"embed"
+	"io/fs"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/resource/composed"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // LoadDataFromFile imports a file for processing in tests.
-func LoadDataFromFile(path string) string {
-	data, err := os.ReadFile(path)
+func LoadDataFromFile(filename string) ([]byte, error) {
+	var testdataFS embed.FS
+	data, err := fs.ReadFile(testdataFS, "./testdata/"+filename)
 	if err != nil {
-		log.Fatal(err)
+		return []byte{}, err
 	}
-	return string(data)
+	return data, nil
 }
 
 // LoadDesiredComposedFromFile loads a DesiredComposed resource from a JSON file.
-func LoadDesiredComposedFromFile(filepath string) (*resource.DesiredComposed, error) {
+func LoadDesiredComposedFromFile(filename string) (*resource.DesiredComposed, error) {
 	// Read the JSON file
-	data, err := os.ReadFile(filepath)
+	data, err := LoadDataFromFile(filename)
 	if err != nil {
 		return nil, err
 	}
