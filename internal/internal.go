@@ -95,7 +95,7 @@ func SetBoolAnnotation(des *resource.DesiredComposed, key string, value bool) {
 
 // GetBoolAnnotation retrieves a boolean value from annotations.
 // It expects the annotation values which are supported by strconv.ParseBool accepts.
-// Returns (value, true) if the annotation exists and is valid, otherwise (false, false).
+// Returns (value, nil) if the annotation exists and is valid, otherwise (false, error).
 func GetBoolAnnotation(des *resource.DesiredComposed, key string) (bool, error) {
 	annotations := des.Resource.GetAnnotations()
 	if annotations == nil {
