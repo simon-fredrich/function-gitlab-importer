@@ -16,12 +16,14 @@ import (
 	"github.com/crossplane/function-sdk-go/response"
 )
 
-var externalNameExisting = testutils.LoadDataFromFile("testdata/external-name-existing.json")
-
-// TODO: ResponseIsReturnedWithNoChange (wrong message does not change the desired resource)
-// TODO: ResponseIsReturnedWithChange(right message does change the desired resource with an external-name annotation)
-
 func TestRunFunction(t *testing.T) {
+	filepath := "testdata/external-name-existing.json"
+	externalNameExistingData, err := testutils.LoadDataFromFile(filepath)
+	if err != nil {
+		t.Errorf("cannot load data from file %s: %s", filepath, err.Error())
+	}
+	externalNameExisting := string(externalNameExistingData)
+
 	type args struct {
 		ctx context.Context
 		req *fnv1.RunFunctionRequest
