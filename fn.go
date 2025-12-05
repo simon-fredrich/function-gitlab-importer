@@ -3,16 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 	"github.com/simon-fredrich/function-gitlab-importer/internal"
 	"github.com/simon-fredrich/function-gitlab-importer/internal/gitlabclient"
-	"github.com/simon-fredrich/function-gitlab-importer/internal/handler"
-	"github.com/simon-fredrich/function-gitlab-importer/internal/handler/gitlabhandler"
-	"github.com/simon-fredrich/function-gitlab-importer/internal/importer"
-	"github.com/simon-fredrich/function-gitlab-importer/internal/importer/gitlabimporter"
+	"github.com/simon-fredrich/function-gitlab-importer/internal/gvkimplementation"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
@@ -108,9 +105,9 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 	for name, obs := range resources.GetObserved() {
 		f.log.Info("Processing resource", "name", name)
 
-		obsGroup := obs.Resource.GetObjectKind().GroupVersionKind().Group
-		// only process resources related to gitlab
-		if !strings.Contains(obsGroup, "gitlab") {
+		// only process relevant resources
+		obsGVK := obs.Resource.GetObjectKind().GroupVersionKind()
+		if !gvkimplementation.IsAllowed(obsGVK) {
 			continue
 		}
 
@@ -121,66 +118,60 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 			continue
 		}
 
-		if err := f.ensureExternalName(obs, des); err != nil {
+		if err := f.ensureExternalName(obs, des, obsGVK); err != nil {
 			f.log.Info("Failed to ensure external-name", "name", name, "err", err)
 			continue
 		}
-
-		// Mark resource to have its external-name managed.
-		internal.AddAnnotationToDesired(des, "crossplane.io/managed-external-name", "true")
-
-		// Configure managementPolicies
-		observeOnly := []string{"Observe"}
-		des.Resource.SetValue("spec.managementPolicies", observeOnly)
 
 		desResourcesWithUpdate[name] = des
 	}
 	return desResourcesWithUpdate
 }
 
-func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed) error {
+func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed, obsGKV schema.GroupVersionKind) error {
 	externalName := internal.GetExternalNameFromObserved(obs)
 	// Test if external-name already present on observed.
-	if externalName != "" {
+	managed, err := internal.GetBoolAnnotation(obs, "crossplane.io/managed-external-name")
+	if err != nil {
+		f.log.Debug("cannot get annotation", "err", err)
+	}
+	f.log.Info("ensureExternalName", "externalName", externalName, "managed", managed)
+	if externalName != "" && managed {
 		f.log.Info("Copy external-name from observed to desired composed resource...")
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
+			return err
+		}
+		err := internal.SetManagedValues(des)
+		if err != nil {
 			return err
 		}
 		return nil
 	}
 
 	// If external-name not present try to import it using a fitting importer implementation.
-	obsGroup := obs.Resource.GetObjectKind().GroupVersionKind().Group
-	var resourceImporter importer.Importer
-	var handler handler.Handler
-	switch obsGroup {
-	case "projects.gitlab.crossplane.io":
-		handler = &gitlabhandler.ProjectHandler{}
-		resourceImporter = &gitlabimporter.ProjectImporter{}
-	case "groups.gitlab.crossplane.io":
-		handler = &gitlabhandler.GroupHandler{}
-		resourceImporter = &gitlabimporter.GroupImporter{}
-	default:
-		f.log.Debug("group does not have an importer", "observed group", obsGroup)
+	impl, ok := gvkimplementation.LookupByGKV(obsGKV)
+	if !ok {
 		return nil
 	}
-	msg, value := handler.CheckResourceExists(obs)
-	if value {
+
+	msg, exists := impl.Handler.CheckResourceExists(obs)
+	if exists {
 		f.log.Info("Resource already exists; importing external-name", "msg", msg)
 		if f.Client == nil {
 			// supply function with gitlab client
 			client, err := gitlabclient.LoadClient(f.Input)
 			if err != nil {
 				f.log.Debug("cannot supply function with gitlab client", "err", err)
+				return errors.Errorf("cannot initialize gitlab client: %w", err)
 			}
 			f.Client = client
 		}
 		// supply importer with client
-		err := resourceImporter.PassClient(f.Client)
+		err := impl.Importer.PassClient(f.Client)
 		if err != nil {
 			return err
 		}
-		externalName, err := resourceImporter.Import(des)
+		externalName, err := impl.Importer.Import(des)
 		if err != nil {
 			return err
 		}
@@ -188,6 +179,11 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
+		err = internal.SetManagedValues(des)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	}
 

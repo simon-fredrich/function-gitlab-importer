@@ -2,7 +2,9 @@ package internal
 
 import (
 	"fmt"
+	"strconv"
 
+	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
@@ -58,13 +60,13 @@ func GetExternalNameFromObserved(obs resource.ObservedComposed) string {
 	return obs.Resource.GetAnnotations()["crossplane.io/external-name"]
 }
 
-// AddAnnotationToDesired adds a custom annotation to a desired composed resource.
+// AddAnnotationOnDesired adds a custom annotation to a desired composed resource.
 // If the resource has no existing annotations, a new map is created.
 // The annotation is added using the provided key and value.
 //
 // This helper is useful in Crossplane functions for dynamically adding metadata
 // to desired resources during function execution.
-func AddAnnotationToDesired(des *resource.DesiredComposed, key string, value string) {
+func AddAnnotationOnDesired(des *resource.DesiredComposed, key string, value string) {
 	annotations := des.Resource.GetAnnotations()
 
 	if annotations == nil {
@@ -81,6 +83,52 @@ func SetExternalNameOnDesired(des *resource.DesiredComposed, externalName string
 		return fmt.Errorf("external-name is empty")
 	}
 
-	AddAnnotationToDesired(des, "crossplane.io/external-name", externalName)
+	AddAnnotationOnDesired(des, "crossplane.io/external-name", externalName)
+	return nil
+}
+
+// SetBoolAnnotation appends a boolean value as "true"/"false" to annotations.
+func SetBoolAnnotation(des *resource.DesiredComposed, key string, value bool) {
+	boolAsString := strconv.FormatBool(value)
+	AddAnnotationOnDesired(des, key, boolAsString)
+}
+
+// GetBoolAnnotation retrieves a boolean value from annotations of observed composed resource.
+// It expects the annotation values which are supported by strconv.ParseBool accepts.
+// Returns (value, nil) if the annotation exists and is valid, otherwise (false, error).
+func GetBoolAnnotation(obs resource.ObservedComposed, key string) (bool, error) {
+	annotations := obs.Resource.GetAnnotations()
+	if annotations == nil {
+		return false, errors.New("annotations == nil")
+	}
+
+	rawValue, ok := annotations[key]
+	if !ok {
+		return false, errors.Errorf("key \"%s\" not valid", key)
+	}
+
+	parsedValue, err := strconv.ParseBool(rawValue)
+	if err != nil {
+		// Invalid value (not "true"/"false")
+		return false, errors.Errorf("value \"%v\" could not be parsed: %w", rawValue, err)
+	}
+
+	return parsedValue, nil
+}
+
+// SetManagedValues edits the desired composite resource to display that it
+// has been imported and therefore is being managed and sets managementPolicies
+// to only observe external resources.
+func SetManagedValues(des *resource.DesiredComposed) error {
+	// Mark resource to have its external-name managed.
+	SetBoolAnnotation(des, "crossplane.io/managed-external-name", true)
+
+	// Configure managementPolicies
+	observeOnly := []string{"Observe"}
+	err := des.Resource.SetValue("spec.managementPolicies", observeOnly)
+	if err != nil {
+		return errors.Errorf("cannot set managed values on resource: %w", err)
+	}
+
 	return nil
 }

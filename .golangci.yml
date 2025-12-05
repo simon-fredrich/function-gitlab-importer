@@ -97,6 +97,9 @@ linters:
     # against idiomatic Go programming, which encourages this approach - e.g.
     # to scope errors.
     - noinlineerr
+
+    # Due to registry for handling GroupVersionKind specific implementations.
+    - gochecknoglobals
   settings:
     depguard:
       rules:
@@ -158,7 +161,6 @@ linters:
           - containedctx
           - errcheck
           - forcetypeassert
-          - gochecknoglobals
           - gochecknoinits
           - gocognit
           - gosec
