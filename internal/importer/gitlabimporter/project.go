@@ -19,7 +19,8 @@ import (
 // This type is intended for Crossplane functions that need to import existing GitLab projects
 // rather than creating new ones.
 type ProjectImporter struct {
-	Client *gitlab.Client
+	Client    *gitlab.Client
+	projectID *int
 }
 
 // Import locates an existing GitLab project based on the desired resource specification
@@ -47,6 +48,7 @@ func (p *ProjectImporter) Import(des *resource.DesiredComposed) (string, error) 
 	if err != nil {
 		return "", errors.Errorf("cannot import resource: %w", err)
 	}
+	p.projectID = &projectID
 
 	externalName := strconv.Itoa(projectID)
 	err = internal.SetExternalNameOnDesired(des, externalName)
@@ -69,6 +71,20 @@ func (p *ProjectImporter) PassClient(client any) error {
 	}
 	p.Client = c
 	return nil
+}
+
+func (p *ProjectImporter) GetFullPath() (string, error) {
+	if p.projectID != nil {
+		if p.Client != nil {
+			project, rsp, err := p.Client.Projects.GetProject(*p.projectID, &gitlab.GetProjectOptions{})
+			if err != nil {
+				return "", errors.Errorf("cannot get project, rsp: %v, err: %v", rsp, err)
+			}
+			return project.PathWithNamespace, nil
+		}
+		return "", errors.New("client has not been initialized jet, use importer.PassClient first")
+	}
+	return "", errors.New("projectID has not been initialized jet, use importer.Import first")
 }
 
 // GetProject returns the ID of a GitLab project given its namespace ID and path.

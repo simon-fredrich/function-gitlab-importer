@@ -1,11 +1,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: simple-function
+  name: simple-project
 spec:
   compositeTypeRef:
     apiVersion: gitlab.example.org/v1alpha1
-    kind: SimpleFunction
+    kind: SimpleProject
   mode: Pipeline
   pipeline:
     - step: render-templates

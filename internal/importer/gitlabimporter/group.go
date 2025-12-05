@@ -19,7 +19,8 @@ import (
 // This type is intended for Crossplane functions that need to import existing GitLab groups
 // rather than creating new ones.
 type GroupImporter struct {
-	Client *gitlab.Client
+	Client  *gitlab.Client
+	groupID *int
 }
 
 // Import locates an existing GitLab group based on the desired resource specification
@@ -47,6 +48,7 @@ func (g *GroupImporter) Import(des *resource.DesiredComposed) (string, error) {
 	if err != nil {
 		return "", errors.Errorf("cannot import resource: %w", err)
 	}
+	g.groupID = &groupID
 
 	externalName := strconv.Itoa(groupID)
 	err = internal.SetExternalNameOnDesired(des, externalName)
@@ -69,6 +71,20 @@ func (g *GroupImporter) PassClient(client any) error {
 	}
 	g.Client = c
 	return nil
+}
+
+func (g *GroupImporter) GetFullPath() (string, error) {
+	if g.groupID != nil {
+		if g.Client != nil {
+			group, rsp, err := g.Client.Groups.GetGroup(*g.groupID, &gitlab.GetGroupOptions{})
+			if err != nil {
+				return "", errors.Errorf("cannot get group, rsp: %v, err: %v", rsp, err)
+			}
+			return group.FullPath, nil
+		}
+		return "", errors.New("client has not been initialized jet, use importer.PassClient first")
+	}
+	return "", errors.New("groupID has not been initialized jet, use importer.Import first")
 }
 
 // GetGroup returns the ID of a GitLab subgroup given its namespace ID and path.

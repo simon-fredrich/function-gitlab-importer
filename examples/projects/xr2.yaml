@@ -1,8 +1,8 @@
 apiVersion: gitlab.example.org/v1alpha1
-kind: SimpleFunction
+kind: SimpleProject
 metadata:
-  name: simple-function-two
-  namespace: simplefunctions.gitlab.example.org
+  name: simple-project-two
+  namespace: simpleprojects.gitlab.example.org
 spec:
   projectName: project-to-import
   namespaceId: 117974298

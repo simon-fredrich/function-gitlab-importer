@@ -175,11 +175,11 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 			return err
 		}
 
-		desPath, err := impl.Handler.GetPath(des)
+		fullPath, err := impl.Importer.GetFullPath()
 		if err != nil {
 			return err
 		}
-		f.log.Info("Resource successfully imported!", "external-name", externalName, "path", desPath)
+		f.log.Info("Resource successfully imported!", "external-name", externalName, "fullPath", fullPath)
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
