@@ -133,7 +133,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 	// Test if external-name already present on observed.
 	managed, err := internal.GetBoolAnnotation(des, "crossplane.io/managed-external-name")
 	if err != nil {
-		return err
+		f.log.Debug("cannot get annotation", "err", err)
 	}
 	if externalName != "" && managed {
 		f.log.Info("Copy external-name from observed to desired composed resource...")
