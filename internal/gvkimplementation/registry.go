@@ -11,29 +11,30 @@ import (
 )
 
 var (
-	gvkGroup   = providergroupsv1alpha1.GroupKubernetesGroupVersionKind
-	gvkProject = providerprojectsv1alpha1.ProjectGroupVersionKind
+	gitlabGroupGKV   = providergroupsv1alpha1.GroupKubernetesGroupVersionKind
+	gitlabProjectGKV = providerprojectsv1alpha1.ProjectGroupVersionKind
 )
 
-type implementation struct {
+// Implementation contains Handler and Importer for specific resource implementation.
+type Implementation struct {
 	Handler  handler.Handler
 	Importer importer.Importer
 }
 
-var implementationByGVK = map[schema.GroupVersionKind]implementation{
-	gvkGroup: {
+var implementationByGVK = map[schema.GroupVersionKind]Implementation{
+	gitlabGroupGKV: {
 		Handler:  &gitlabhandler.GroupHandler{},
 		Importer: &gitlabimporter.GroupImporter{},
 	},
-	gvkProject: {
+	gitlabProjectGKV: {
 		Handler:  &gitlabhandler.ProjectHandler{},
 		Importer: &gitlabimporter.ProjectImporter{},
 	},
 }
 
 var allowedGVKs = map[schema.GroupVersionKind]struct{}{
-	gvkGroup:   {},
-	gvkProject: {},
+	gitlabGroupGKV:   {},
+	gitlabProjectGKV: {},
 }
 
 // IsAllowed checks whether the given GroupVersionKind (GVK) is present
@@ -44,10 +45,10 @@ func IsAllowed(gvk schema.GroupVersionKind) bool {
 	return ok
 }
 
-// LookupByGVK retrieves the implementation (handler and importer) associated
+// LookupByGKV retrieves the implementation (handler and importer) associated
 // with the given GroupVersionKind (GVK) from the implementationByGVK registry.
 // It returns the implementation and a boolean indicating whether the GVK was found.
-func LookupByGKV(gkv schema.GroupVersionKind) (implementation, bool) {
+func LookupByGKV(gkv schema.GroupVersionKind) (Implementation, bool) {
 	i, ok := implementationByGVK[gkv]
 	return i, ok
 }
