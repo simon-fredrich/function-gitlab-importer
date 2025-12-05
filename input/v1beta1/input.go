@@ -14,7 +14,7 @@ import (
 // +kubebuilder:resource:categories=crossplane
 type Input struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	BaseURL string `json:"baseURL"`
 }
