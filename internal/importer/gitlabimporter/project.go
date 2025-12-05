@@ -76,7 +76,7 @@ func (p *ProjectImporter) PassClient(client any) error {
 func (p *ProjectImporter) GetFullPath() (string, error) {
 	if p.projectID != nil {
 		if p.Client != nil {
-			project, rsp, err := p.Client.Projects.GetProject(p.projectID, &gitlab.GetProjectOptions{})
+			project, rsp, err := p.Client.Projects.GetProject(*p.projectID, &gitlab.GetProjectOptions{})
 			if err != nil {
 				return "", errors.Errorf("cannot get project, rsp: %v, err: %v", rsp, err)
 			}
