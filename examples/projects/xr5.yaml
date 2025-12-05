@@ -1,0 +1,8 @@
+apiVersion: gitlab.example.org/v1alpha1
+kind: SimpleFunction
+metadata:
+  name: simple-function-five
+  namespace: simplefunctions.gitlab.example.org
+spec:
+  projectName: project-to-create
+  namespaceId: 117974298
