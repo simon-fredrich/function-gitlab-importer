@@ -1,0 +1,8 @@
+apiVersion: gitlab.example.org/v1alpha1
+kind: SimpleGroup
+metadata:
+  name: simple-group-four
+  namespace: simplegroups.gitlab.example.org
+spec:
+  groupName: group-to-create
+  namespaceId: 117974298
