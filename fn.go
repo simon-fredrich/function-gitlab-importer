@@ -175,7 +175,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 			return err
 		}
 
-		fullPath, err := impl.Importer.GetFullPath()
+		fullPath, err := impl.Importer.GetContext()
 		if err != nil {
 			return err
 		}
