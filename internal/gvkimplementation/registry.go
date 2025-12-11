@@ -10,11 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var (
-	gitlabGroupGKV   = providergroupsv1alpha1.GroupKubernetesGroupVersionKind
-	gitlabProjectGKV = providerprojectsv1alpha1.ProjectGroupVersionKind
-)
-
 // Implementation contains Handler and Importer for specific resource implementation.
 type Implementation struct {
 	Handler  handler.Handler
@@ -22,19 +17,19 @@ type Implementation struct {
 }
 
 var implementationByGVK = map[schema.GroupVersionKind]Implementation{
-	gitlabGroupGKV: {
+	providergroupsv1alpha1.GroupKubernetesGroupVersionKind: {
 		Handler:  &gitlabhandler.GroupHandler{},
 		Importer: &gitlabimporter.GroupImporter{},
 	},
-	gitlabProjectGKV: {
+	providerprojectsv1alpha1.ProjectGroupVersionKind: {
 		Handler:  &gitlabhandler.ProjectHandler{},
 		Importer: &gitlabimporter.ProjectImporter{},
 	},
 }
 
 var allowedGVKs = map[schema.GroupVersionKind]struct{}{
-	gitlabGroupGKV:   {},
-	gitlabProjectGKV: {},
+	providergroupsv1alpha1.GroupKubernetesGroupVersionKind: {},
+	providerprojectsv1alpha1.ProjectGroupVersionKind:       {},
 }
 
 // IsAllowed checks whether the given GroupVersionKind (GVK) is present
