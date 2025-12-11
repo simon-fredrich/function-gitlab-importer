@@ -99,7 +99,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 // processRecources processes gitlab related resources.
 func (f *Function) processResources(resources internal.Resources) map[resource.Name]*resource.DesiredComposed {
 	// define map to hold desired resources that need an update
-	desResourcesWithUpdate := make(map[resource.Name]*resource.DesiredComposed)
+	desResourcesWithUpdate := make(map[resource.Name]*resource.DesiredComposed, len(resources.GetDesired()))
 
 	// iterate through observed resources and filter out gitlab related ones
 	for name, obs := range resources.GetObserved() {
