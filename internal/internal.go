@@ -120,14 +120,19 @@ func GetBoolAnnotation(obs resource.ObservedComposed, key string) (bool, error) 
 
 // SetManagedValues edits the desired composite resource to display that it
 // has been imported and therefore is being managed and sets managementPolicies
-// to only observe external resources.
+// to either observe-only by default or set additional policies provided as input.
 func SetManagedValues(des *resource.DesiredComposed, in *v1beta1.Input) error {
 	// Mark resource to have its external-name managed.
 	SetBoolAnnotation(des, "crossplane.io/managed-external-name", true)
 
 	// Configure managementPolicies
-	observeOnly := []string{"Observe"}
-	err := des.Resource.SetValue("spec.managementPolicies", observeOnly)
+	managementPolicies := []string{"Observe"}
+	for _, policy := range in.ManagementPolicies {
+		if policy != "Observe" {
+			managementPolicies = append(managementPolicies, policy)
+		}
+	}
+	err := des.Resource.SetValue("spec.managementPolicies", managementPolicies)
 	if err != nil {
 		return errors.Errorf("cannot set managed values on resource: %w", err)
 	}
