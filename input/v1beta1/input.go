@@ -5,9 +5,8 @@
 package v1beta1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/crossplane/crossplane-runtime/v2/apis/common"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Input can be used to provide input to this Function.

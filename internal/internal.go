@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/crossplane/crossplane-runtime/v2/apis/common"
 	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
 
-	"github.com/crossplane/crossplane-runtime/v2/apis/common"
 	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
