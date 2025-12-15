@@ -34,9 +34,10 @@ spec:
     - step: check-template
       functionRef:
         name: function-gitlab-importer
-        input:
-          managementPolicies:
-           - Observe
+      input:
+        managementPolicies:
+        - Observe
+        - Update
     - step: ensure-readiness
       functionRef:
         name: crossplane-contrib-function-auto-ready
