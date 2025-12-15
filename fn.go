@@ -31,7 +31,13 @@ type Function struct {
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
-	f.log.Debug("Running function", "tag", req.GetMeta().GetTag())
+	// get function-tag as a base log info
+	baseLog := f.log.WithValues(
+		"function.tag", req.GetMeta().GetTag(),
+	)
+	f.log = baseLog
+	f.log.Debug("Running function")
+
 	rsp := response.To(req, response.DefaultTTL)
 	in := &v1beta1.Input{}
 	f.Input = in
@@ -103,7 +109,8 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 
 	// iterate through observed resources and filter out gitlab related ones
 	for name, obs := range resources.GetObserved() {
-		f.log.Debug("Processing resource", "name", name)
+		log := f.log.WithValues("name", name)
+		log.Debug("Processing resource")
 
 		// only process relevant resources
 		obsGVK := obs.Resource.GetObjectKind().GroupVersionKind()
@@ -114,12 +121,12 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 		// ensure there is a matching desired resource we can update
 		des, ok := resources.GetDesired()[name]
 		if !ok {
-			f.log.Debug("no corresponding desired resource found; skipping", "name", name)
+			log.Debug("no corresponding desired resource found; skipping")
 			continue
 		}
 
-		if err := f.ensureExternalName(obs, des, obsGVK); err != nil {
-			f.log.Debug("Failed to ensure external-name", "name", name, "err", err)
+		if err := f.ensureExternalName(name, obs, des, obsGVK); err != nil {
+			log.Debug("Failed to ensure external-name", "err", err)
 			continue
 		}
 
@@ -128,15 +135,17 @@ func (f *Function) processResources(resources internal.Resources) map[resource.N
 	return desResourcesWithUpdate
 }
 
-func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resource.DesiredComposed, obsGKV schema.GroupVersionKind) error {
+func (f *Function) ensureExternalName(name resource.Name, obs resource.ObservedComposed, des *resource.DesiredComposed, obsGKV schema.GroupVersionKind) error {
+	log := f.log.WithValues("name", name, "GKV", obsGKV)
 	// Test if external-name already present on observed and if resource need management.
 	externalName := internal.GetExternalNameFromObserved(obs)
-	managed, err := internal.GetBoolAnnotation(obs, "crossplane.io/managed-external-name")
+	externalNameAnnotationString := "crossplane.io/managed-external-name"
+	managed, err := internal.GetBoolAnnotation(obs, externalNameAnnotationString)
 	if err != nil {
-		f.log.Debug("cannot get annotation", "err", err)
+		log.Debug("cannot get annotation", "external-name annotation string", externalNameAnnotationString, "err", err)
 	}
 	if externalName != "" && managed {
-		f.log.Debug("Copy external-name from observed to desired composed resource...")
+		log.Debug("Copy external-name from observed to desired composed resource...")
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
@@ -155,12 +164,12 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 
 	msg, exists := impl.Handler.CheckResourceExists(obs)
 	if exists {
-		f.log.Debug("Resource already exists; importing external-name", "msg", msg)
+		log.Debug("Resource already exists; importing external-name", "msg", msg)
 		if f.Client == nil {
 			// supply function with gitlab client
 			client, err := gitlabclient.LoadClient(f.Input)
 			if err != nil {
-				f.log.Debug("cannot supply function with gitlab client", "err", err)
+				log.Debug("cannot supply function with gitlab client", "err", err)
 				return errors.Errorf("cannot initialize gitlab client: %w", err)
 			}
 			f.Client = client
@@ -179,7 +188,7 @@ func (f *Function) ensureExternalName(obs resource.ObservedComposed, des *resour
 		if err != nil {
 			return err
 		}
-		f.log.Info("Resource successfully imported!", "external-name", externalName, "fullPath", fullPath)
+		log.Info("Resource successfully imported!", "external-name", externalName, "fullPath", fullPath)
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
