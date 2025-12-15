@@ -16,15 +16,31 @@ It is mandatory to provide the function with a token to supply access to your gi
 
 ## Configuration
 This function requires certain environment variables and secrets to connect to Kubernetes and GitLab. Make sure these are set before deploying.
-- BASE_URL – Base URL for the GitLab instance.
-- GITLAB_TOKEN – Personal access token for GitLab.
+- `BASE_URL` – Base URL for the GitLab instance.
+- `GITLAB_TOKEN` – Personal access token for GitLab.
+- `managementPolicies` - configure management policies for your imported resources. The default setting is observe-only.
 ### Setting `baseURL` within the Input (optional)
 ```yaml
 - step: run-function
   functionRef:
     name: function-gitlab-importer
   input:
+    apiVersion: template.fn.crossplane.io/v1beta1
+    kind: Input
     baseURL: <gitlab-baseUrl>
+```
+### Setting `managementPolicies` within the Input (optional, defaults to observe-only)
+```yaml
+- step: run-function
+  functionRef:
+    name: function-gitlab-importer
+  input:
+    apiVersion: template.fn.crossplane.io/v1beta1
+    kind: Input
+    managementPolicies:
+    - Observe # default parameter
+    - Update
+    - Delete
 ```
 ### Kubernetes Secret
 ```shell
