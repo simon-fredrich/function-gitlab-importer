@@ -31,12 +31,7 @@ type Function struct {
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
-	// get function-tag as a base log info
-	baseLog := f.log.WithValues(
-		"function.tag", req.GetMeta().GetTag(),
-	)
-	f.log = baseLog
-	f.log.Debug("Running function")
+	f.log.Debug("Running function", "tag", req.GetMeta().GetTag())
 
 	rsp := response.To(req, response.DefaultTTL)
 	in := &v1beta1.Input{}
