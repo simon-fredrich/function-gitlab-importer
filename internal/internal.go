@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/simon-fredrich/function-gitlab-importer/input/v1beta1"
+
 	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
@@ -119,7 +121,7 @@ func GetBoolAnnotation(obs resource.ObservedComposed, key string) (bool, error) 
 // SetManagedValues edits the desired composite resource to display that it
 // has been imported and therefore is being managed and sets managementPolicies
 // to only observe external resources.
-func SetManagedValues(des *resource.DesiredComposed) error {
+func SetManagedValues(des *resource.DesiredComposed, in *v1beta1.Input) error {
 	// Mark resource to have its external-name managed.
 	SetBoolAnnotation(des, "crossplane.io/managed-external-name", true)
 

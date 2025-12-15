@@ -31,6 +31,9 @@ spec:
           baseURL:
             description: baseURL provides the baseURL to the gitlab instance.
             type: string
+          managementPolicies:
+            description: List which managementPolicies the imported resources should recieve. "Observe" is set by default.
+            type: array
           kind:
             description: |-
               kind is a string value representing the rest resource this object represents.

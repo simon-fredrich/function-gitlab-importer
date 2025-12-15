@@ -16,5 +16,6 @@ type Input struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	BaseURL string `json:"baseURL"`
+	BaseURL            string   `json:"baseURL"`
+	ManagementPolicies []string `json:"managementPolicies"`
 }

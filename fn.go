@@ -144,7 +144,7 @@ func (f *Function) ensureExternalName(name resource.Name, obs resource.ObservedC
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
-		err := internal.SetManagedValues(des)
+		err := internal.SetManagedValues(des, f.Input)
 		if err != nil {
 			return err
 		}
@@ -187,7 +187,7 @@ func (f *Function) ensureExternalName(name resource.Name, obs resource.ObservedC
 		if err := internal.SetExternalNameOnDesired(des, externalName); err != nil {
 			return err
 		}
-		err = internal.SetManagedValues(des)
+		err = internal.SetManagedValues(des, f.Input)
 		if err != nil {
 			return err
 		}
