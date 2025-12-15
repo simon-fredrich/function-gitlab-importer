@@ -38,7 +38,7 @@ This function requires certain environment variables and secrets to connect to K
     apiVersion: template.fn.crossplane.io/v1beta1
     kind: Input
     managementPolicies:
-    - Observe # default parameter
+    - Observe # default if input "managementPolicies" not used
     - Update
     - Delete
 ```
