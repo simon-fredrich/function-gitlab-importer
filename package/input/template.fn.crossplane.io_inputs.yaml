@@ -34,6 +34,8 @@ spec:
           managementPolicies:
             description: List which managementPolicies the imported resources should recieve. "Observe" is set by default.
             type: array
+            items:
+              type: string
           kind:
             description: |-
               kind is a string value representing the rest resource this object represents.
