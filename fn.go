@@ -195,5 +195,5 @@ func (f *Function) ensureExternalName(name resource.Name, obs resource.ObservedC
 		return nil
 	}
 
-	return errors.Errorf("external-name could not be set: %s", msg)
+	return nil
 }
