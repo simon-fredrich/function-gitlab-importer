@@ -107,7 +107,7 @@ func GetBoolAnnotation(obs resource.ObservedComposed, key string) (bool, error) 
 
 	rawValue, ok := annotations[key]
 	if !ok {
-		return false, errors.Errorf("key \"%s\" not valid", key)
+		return false, nil
 	}
 
 	parsedValue, err := strconv.ParseBool(rawValue)
