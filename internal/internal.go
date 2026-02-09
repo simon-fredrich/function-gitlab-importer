@@ -127,7 +127,7 @@ func GetBoolAnnotation(obs resource.ObservedComposed, key string) (bool, error) 
 // to observe-only.
 func SetManagedValues(des *resource.DesiredComposed, in *v1beta1.Input) error {
 	// Mark resource to have its external-name managed.
-	SetBoolAnnotation(des, "crossplane.io/managed-external-name", true)
+	SetBoolAnnotation(des, "function-gitlab-importer/managed-external-name", true)
 
 	// Configure managementPolicies
 	managementPolicies := common.ManagementPolicies{}

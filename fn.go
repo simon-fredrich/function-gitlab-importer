@@ -134,7 +134,7 @@ func (f *Function) ensureExternalName(name resource.Name, obs resource.ObservedC
 	log := f.log.WithValues("name", name, "GKV", obsGKV)
 	// Test if external-name already present on observed and if resource need management.
 	externalName := internal.GetExternalNameFromObserved(obs)
-	externalNameAnnotationString := "crossplane.io/managed-external-name"
+	externalNameAnnotationString := "function-gitlab-importer/managed-external-name"
 	managed, err := internal.GetBoolAnnotation(obs, externalNameAnnotationString)
 	if err != nil {
 		log.Debug("cannot get annotation", "external-name annotation string", externalNameAnnotationString, "err", err)
